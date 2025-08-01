@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { RiskBadge } from "@/components/RiskBadge";
 import { Plus, Building2, Package, FileText, Download } from "lucide-react";
-import { getSurveyById, getRoomsBySurveyId, getItemsByRoomId, getSurveyData } from "@/utils/storage";
+import { getSurveyById, getRoomsBySurveyId, getItemsBySurveyId, getSurveyData } from "@/utils/storage";
 import { generateDOCXReport } from "@/utils/docx";
 import { Survey, Room, Item } from "@/types/survey";
 import { useToast } from "@/hooks/use-toast";
@@ -17,6 +17,7 @@ export default function SurveyDetail() {
   const { toast } = useToast();
   const [survey, setSurvey] = useState<Survey | null>(null);
   const [rooms, setRooms] = useState<Room[]>([]);
+  const [items, setItems] = useState<Item[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -30,6 +31,7 @@ export default function SurveyDetail() {
     
     setSurvey(surveyData);
     setRooms(getRoomsBySurveyId(surveyId));
+    setItems(getItemsBySurveyId(surveyId));
     setLoading(false);
   }, [surveyId, navigate]);
 
@@ -62,13 +64,13 @@ export default function SurveyDetail() {
   };
 
   const getRoomStats = (roomId: string) => {
-    const items = getItemsByRoomId(roomId);
-    const riskCounts = items.reduce((acc, item) => {
+    const roomItems = items.filter(item => item.surveyId === surveyId);
+    const riskCounts = roomItems.reduce((acc, item) => {
       acc[item.riskLevel] = (acc[item.riskLevel] || 0) + 1;
       return acc;
     }, {} as Record<string, number>);
     
-    return { totalItems: items.length, riskCounts };
+    return { totalItems: roomItems.length, riskCounts };
   };
 
   if (loading || !survey) {
@@ -146,7 +148,7 @@ export default function SurveyDetail() {
             </Button>
           </div>
           
-          {rooms.length === 0 ? (
+          {items.length === 0 ? (
             <Card>
               <CardContent className="p-8 text-center">
                 <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
