@@ -183,12 +183,10 @@ export default function Dashboard() {
                             <span className="font-medium">Surveyor:</span>
                             <span>{survey.surveyor}</span>
                           </div>
-                          {survey.gpsCoordinates && (
-                            <div className="flex items-center gap-2 text-sm">
-                              <MapPin className="h-4 w-4 text-muted-foreground" />
-                              <span className="truncate">{survey.gpsCoordinates}</span>
-                            </div>
-                          )}
+                          <div className="flex items-center gap-2 text-sm">
+                            <span className="font-medium">Client:</span>
+                            <span>{survey.clientName}</span>
+                          </div>
                         </div>
                         
                         <div className="space-y-2">

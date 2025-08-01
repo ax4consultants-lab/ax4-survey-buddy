@@ -122,11 +122,12 @@ export default function SurveyDetail() {
               <div>
                 <span className="font-medium">Date:</span> {new Date(survey.date).toLocaleDateString()}
               </div>
-              {survey.gpsCoordinates && (
-                <div>
-                  <span className="font-medium">GPS:</span> {survey.gpsCoordinates}
-                </div>
-              )}
+              <div>
+                <span className="font-medium">Client:</span> {survey.clientName}
+              </div>
+              <div>
+                <span className="font-medium">Document Type:</span> {survey.documentType}
+              </div>
             </div>
           </CardContent>
         </Card>

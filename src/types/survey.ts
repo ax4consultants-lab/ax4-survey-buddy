@@ -2,10 +2,13 @@ export interface Survey {
   surveyId: string;
   jobId: string;
   siteName: string;
+  clientName: string;
+  siteContactName?: string;
+  siteContactPhone?: string;
   surveyType: 'Pre-Sale' | 'Demolition' | 'Re-Inspection' | 'Workplace';
+  documentType: 'AMPR' | 'AMPRU' | 'ARRA' | 'ARRAU' | 'HSMR';
   surveyor: string;
   date: string;
-  gpsCoordinates?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -22,9 +25,19 @@ export interface Item {
   roomId: string;
   referenceNumber: string;
   photoReference?: string;
-  locationDescription: string;
-  itemDescription: string;
+  // Hierarchical location structure
+  buildingArea: string; // Main Residence/Main Building/Granny Flat/etc
+  externalInternal: 'External' | 'Internal' | '';
+  location1: string; // Elevations if external, Sections if Internal
+  location2: string; // Rooms, and specific area
+  itemUse: string; // cladding, lining, splash-back, etc
   materialType: string;
+  // Condition assessment
+  painted: boolean | null;
+  friable: boolean | null;
+  condition: 'Good' | 'Medium' | 'Poor' | '';
+  accessibility: 'Accessible' | 'Limited Access' | 'Generally Inaccessible' | '';
+  warningLabelsVisible: boolean | null;
   riskLevel: 'Low' | 'Medium' | 'High';
   recommendation: string;
   warningLabelsAffixed?: number;

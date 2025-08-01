@@ -8,12 +8,40 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
+import { RecommendationSelect } from "@/components/RecommendationSelect";
 import { Save, Camera, Package, Building2, AlertTriangle } from "lucide-react";
 import { saveItem, generateId, getRoomsBySurveyId, getSurveyById } from "@/utils/storage";
 import { capturePhoto, resizeImage } from "@/utils/camera";
 import { savePhoto } from "@/utils/storage";
 import { Item } from "@/types/survey";
 import { useToast } from "@/hooks/use-toast";
+
+const MATERIAL_TYPES = [
+  'fibrous cement sheet',
+  'fibrous cement plank',
+  'fibrous cement "thick" sheet',
+  'fibre impregnated bituminous membrane tanking ("Malthoid")',
+  'fibre impregnated tar based glue ("Black-Jack")',
+  'fibre impregnated resin boards ("Zelemite" or "Ausbestos")',
+  'fibre impregnated tar coating to metal sheeting ("Galbestos")',
+  'fibre impregnated plastic ("Bakelite")',
+  'pressed asbestos board ("Millboard")',
+  'vinyl floor tiles',
+  'fibre backed vinyl floor sheeting',
+  'electrical wire shielding',
+  'lift electrical arc shields',
+  'lift brake friction material',
+  'woven fibre electrical arc shields',
+  'fire doors (core material)',
+  'cast pipe lagging',
+  'asbestos rope',
+  'penetration packing material',
+  'fire rating (Limpet)',
+  'gaskets material',
+  'joint sealant ("Mastic")',
+  'possible internal components'
+];
 
 export default function AddItem() {
   const { surveyId, roomId } = useParams<{ surveyId: string; roomId: string }>();
@@ -27,9 +55,17 @@ export default function AddItem() {
   const [formData, setFormData] = useState({
     referenceNumber: '',
     photoReference: '',
-    locationDescription: '',
-    itemDescription: '',
+    buildingArea: '',
+    externalInternal: '' as Item['externalInternal'],
+    location1: '',
+    location2: '',
+    itemUse: '',
     materialType: '',
+    painted: null as boolean | null,
+    friable: null as boolean | null,
+    condition: '' as Item['condition'],
+    accessibility: '' as Item['accessibility'],
+    warningLabelsVisible: null as boolean | null,
     riskLevel: '' as Item['riskLevel'] | '',
     recommendation: '',
     warningLabelsAffixed: '',
@@ -47,7 +83,7 @@ export default function AddItem() {
     setRoom(roomData);
   }, [surveyId, roomId]);
 
-  const handleInputChange = (field: string, value: string | number) => {
+  const handleInputChange = (field: string, value: string | number | boolean | null) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
@@ -83,7 +119,7 @@ export default function AddItem() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    const requiredFields = ['referenceNumber', 'locationDescription', 'itemDescription', 'materialType', 'riskLevel', 'recommendation'];
+    const requiredFields = ['referenceNumber', 'buildingArea', 'externalInternal', 'location1', 'location2', 'itemUse', 'materialType', 'riskLevel', 'recommendation'];
     const missingFields = requiredFields.filter(field => !formData[field as keyof typeof formData]);
     
     if (missingFields.length > 0) {
@@ -102,9 +138,17 @@ export default function AddItem() {
       roomId,
       referenceNumber: formData.referenceNumber,
       photoReference: formData.photoReference || undefined,
-      locationDescription: formData.locationDescription,
-      itemDescription: formData.itemDescription,
+      buildingArea: formData.buildingArea,
+      externalInternal: formData.externalInternal,
+      location1: formData.location1,
+      location2: formData.location2,
+      itemUse: formData.itemUse,
       materialType: formData.materialType,
+      painted: formData.painted,
+      friable: formData.friable,
+      condition: formData.condition,
+      accessibility: formData.accessibility,
+      warningLabelsVisible: formData.warningLabelsVisible,
       riskLevel: formData.riskLevel as Item['riskLevel'],
       recommendation: formData.recommendation,
       warningLabelsAffixed: formData.warningLabelsAffixed ? parseInt(formData.warningLabelsAffixed) : undefined,
@@ -124,9 +168,17 @@ export default function AddItem() {
     setFormData({
       referenceNumber: '',
       photoReference: '',
-      locationDescription: '',
-      itemDescription: '',
+      buildingArea: '',
+      externalInternal: '',
+      location1: '',
+      location2: '',
+      itemUse: '',
       materialType: '',
+      painted: null,
+      friable: null,
+      condition: '',
+      accessibility: '',
+      warningLabelsVisible: null,
       riskLevel: '',
       recommendation: '',
       warningLabelsAffixed: '',
@@ -173,6 +225,7 @@ export default function AddItem() {
               <div>
                 <p className="font-medium">{room.roomName}</p>
                 <p className="text-sm text-muted-foreground">{survey.siteName}</p>
+                <p className="text-xs text-muted-foreground">Document Type: {survey.documentType}</p>
               </div>
             </div>
           </CardContent>
@@ -211,37 +264,157 @@ export default function AddItem() {
                 </div>
               </div>
 
+              {/* Hierarchical Location Structure */}
+              <div className="space-y-4 border p-4 rounded-lg">
+                <h3 className="font-medium text-sm text-muted-foreground">Location Hierarchy</h3>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="buildingArea">1. Building/Area *</Label>
+                  <Input
+                    id="buildingArea"
+                    value={formData.buildingArea}
+                    onChange={(e) => handleInputChange('buildingArea', e.target.value)}
+                    placeholder="e.g., Main Residence, Granny Flat, Building 1"
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="externalInternal">2. External/Internal *</Label>
+                  <Select value={formData.externalInternal} onValueChange={(value) => handleInputChange('externalInternal', value)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select location type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="External">External</SelectItem>
+                      <SelectItem value="Internal">Internal</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="location1">3. Location 1 - {formData.externalInternal === 'External' ? 'Elevations' : 'Sections'} *</Label>
+                  <Input
+                    id="location1"
+                    value={formData.location1}
+                    onChange={(e) => handleInputChange('location1', e.target.value)}
+                    placeholder={formData.externalInternal === 'External' ? "e.g., North elevation, East wall" : "e.g., Ground floor, Basement"}
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="location2">4. Location 2 - Rooms/Specific Area *</Label>
+                  <Input
+                    id="location2"
+                    value={formData.location2}
+                    onChange={(e) => handleInputChange('location2', e.target.value)}
+                    placeholder="e.g., Kitchen, Bathroom, Under eaves"
+                    required
+                  />
+                </div>
+              </div>
+
               <div className="space-y-2">
-                <Label htmlFor="locationDescription">Location Description *</Label>
-                <Textarea
-                  id="locationDescription"
-                  value={formData.locationDescription}
-                  onChange={(e) => handleInputChange('locationDescription', e.target.value)}
-                  placeholder="Detailed description of where the item is located"
+                <Label htmlFor="itemUse">5. Item Use *</Label>
+                <Input
+                  id="itemUse"
+                  value={formData.itemUse}
+                  onChange={(e) => handleInputChange('itemUse', e.target.value)}
+                  placeholder="e.g., cladding, lining, splash-back, floor covering"
                   required
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="itemDescription">Item Description *</Label>
-                <Input
-                  id="itemDescription"
-                  value={formData.itemDescription}
-                  onChange={(e) => handleInputChange('itemDescription', e.target.value)}
-                  placeholder="e.g., Wall cladding, Floor tiles, Pipe lagging"
-                  required
-                />
+                <Label htmlFor="materialType">6. Material Type *</Label>
+                <Select value={formData.materialType} onValueChange={(value) => handleInputChange('materialType', value)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select material type" />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-[200px]">
+                    {MATERIAL_TYPES.map((material) => (
+                      <SelectItem key={material} value={material}>
+                        {material}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="materialType">Material Type *</Label>
-                <Input
-                  id="materialType"
-                  value={formData.materialType}
-                  onChange={(e) => handleInputChange('materialType', e.target.value)}
-                  placeholder="e.g., Fibrous cement sheet, Vinyl floor tile"
-                  required
-                />
+              {/* Condition Assessment */}
+              <div className="space-y-4 border p-4 rounded-lg">
+                <h3 className="font-medium text-sm text-muted-foreground">7. Condition Assessment</h3>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-3">
+                    <div className="flex items-center space-x-2">
+                      <Checkbox 
+                        id="painted"
+                        checked={formData.painted === true}
+                        onCheckedChange={(checked) => handleInputChange('painted', checked ? true : formData.painted === true ? null : false)}
+                      />
+                      <Label htmlFor="painted">Painted</Label>
+                      {formData.painted === false && (
+                        <span className="text-sm text-muted-foreground">(Not painted)</span>
+                      )}
+                    </div>
+
+                    <div className="flex items-center space-x-2">
+                      <Checkbox 
+                        id="friable"
+                        checked={formData.friable === true}
+                        onCheckedChange={(checked) => handleInputChange('friable', checked ? true : formData.friable === true ? null : false)}
+                      />
+                      <Label htmlFor="friable">Friable</Label>
+                      {formData.friable === false && (
+                        <span className="text-sm text-muted-foreground">(Not friable)</span>
+                      )}
+                    </div>
+
+                    <div className="flex items-center space-x-2">
+                      <Checkbox 
+                        id="warningLabelsVisible"
+                        checked={formData.warningLabelsVisible === true}
+                        onCheckedChange={(checked) => handleInputChange('warningLabelsVisible', checked ? true : formData.warningLabelsVisible === true ? null : false)}
+                      />
+                      <Label htmlFor="warningLabelsVisible">Warning Labels Visible</Label>
+                      {formData.warningLabelsVisible === false && (
+                        <span className="text-sm text-muted-foreground">(Not visible)</span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    <div className="space-y-2">
+                      <Label htmlFor="condition">Condition</Label>
+                      <Select value={formData.condition} onValueChange={(value) => handleInputChange('condition', value)}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select condition" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Good">Good</SelectItem>
+                          <SelectItem value="Medium">Medium</SelectItem>
+                          <SelectItem value="Poor">Poor</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="accessibility">Accessibility</Label>
+                      <Select value={formData.accessibility} onValueChange={(value) => handleInputChange('accessibility', value)}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select accessibility" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Accessible">Accessible</SelectItem>
+                          <SelectItem value="Limited Access">Limited Access</SelectItem>
+                          <SelectItem value="Generally Inaccessible">Generally Inaccessible</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </div>
               </div>
 
               <div className="space-y-2">
@@ -280,14 +453,14 @@ export default function AddItem() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="recommendation">Recommendation *</Label>
-                <Textarea
-                  id="recommendation"
-                  value={formData.recommendation}
-                  onChange={(e) => handleInputChange('recommendation', e.target.value)}
-                  placeholder="Recommended action for this item"
-                  required
-                />
+                <Label htmlFor="recommendation">9. Recommendation *</Label>
+                {survey && (
+                  <RecommendationSelect
+                    documentType={survey.documentType}
+                    value={formData.recommendation}
+                    onValueChange={(value) => handleInputChange('recommendation', value)}
+                  />
+                )}
               </div>
 
               <div className="space-y-2">
@@ -303,12 +476,12 @@ export default function AddItem() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="notes">Notes</Label>
+                <Label htmlFor="notes">8. Notes</Label>
                 <Textarea
                   id="notes"
                   value={formData.notes}
                   onChange={(e) => handleInputChange('notes', e.target.value)}
-                  placeholder="Additional notes (friability, condition, accessibility, etc.)"
+                  placeholder="Additional notes about condition, friability, accessibility, etc."
                 />
               </div>
 

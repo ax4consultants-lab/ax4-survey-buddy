@@ -121,7 +121,7 @@ export default function RoomDetail() {
                           <RiskBadge risk={item.riskLevel} />
                         </div>
                         <p className="text-sm text-muted-foreground font-medium">
-                          {item.itemDescription}
+                          {item.itemUse}
                         </p>
                       </div>
                       {item.photos.length > 0 && (
@@ -137,7 +137,7 @@ export default function RoomDetail() {
                     <div className="space-y-3">
                       <div>
                         <p className="text-sm font-medium text-muted-foreground">Location:</p>
-                        <p className="text-sm">{item.locationDescription}</p>
+                        <p className="text-sm">{item.buildingArea} - {item.location1} - {item.location2}</p>
                       </div>
                       
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">

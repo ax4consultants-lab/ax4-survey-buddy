@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { MapPin, Save } from "lucide-react";
+import { Save } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { saveSurvey, generateId } from "@/utils/storage";
 import { Survey } from "@/types/survey";
@@ -17,60 +17,21 @@ export default function NewSurvey() {
   const [formData, setFormData] = useState({
     jobId: '',
     siteName: '',
+    clientName: '',
+    siteContactName: '',
+    siteContactPhone: '',
     surveyType: '' as Survey['surveyType'] | '',
+    documentType: '' as Survey['documentType'] | '',
     surveyor: '',
-    gpsCoordinates: '',
   });
-  const [isLoadingLocation, setIsLoadingLocation] = useState(false);
-
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
-  };
-
-  const getCurrentLocation = async () => {
-    if (!navigator.geolocation) {
-      toast({
-        title: "Location not supported",
-        description: "Your device doesn't support geolocation",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setIsLoadingLocation(true);
-    
-    try {
-      const position = await new Promise<GeolocationPosition>((resolve, reject) => {
-        navigator.geolocation.getCurrentPosition(resolve, reject, {
-          enableHighAccuracy: true,
-          timeout: 10000,
-          maximumAge: 300000,
-        });
-      });
-
-      const { latitude, longitude } = position.coords;
-      const coordinates = `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
-      handleInputChange('gpsCoordinates', coordinates);
-      
-      toast({
-        title: "Location captured",
-        description: "GPS coordinates added to survey",
-      });
-    } catch (error) {
-      toast({
-        title: "Location error",
-        description: "Unable to get current location",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoadingLocation(false);
-    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.jobId || !formData.siteName || !formData.surveyType || !formData.surveyor) {
+    if (!formData.jobId || !formData.siteName || !formData.clientName || !formData.surveyType || !formData.documentType || !formData.surveyor) {
       toast({
         title: "Missing information",
         description: "Please fill in all required fields",
@@ -83,9 +44,12 @@ export default function NewSurvey() {
       surveyId: generateId(),
       jobId: formData.jobId,
       siteName: formData.siteName,
+      clientName: formData.clientName,
+      siteContactName: formData.siteContactName || undefined,
+      siteContactPhone: formData.siteContactPhone || undefined,
       surveyType: formData.surveyType as Survey['surveyType'],
+      documentType: formData.documentType as Survey['documentType'],
       surveyor: formData.surveyor,
-      gpsCoordinates: formData.gpsCoordinates || undefined,
       date: new Date().toISOString(),
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
@@ -141,6 +105,39 @@ export default function NewSurvey() {
               </div>
 
               <div className="space-y-2">
+                <Label htmlFor="clientName">Client Name *</Label>
+                <Input
+                  id="clientName"
+                  value={formData.clientName}
+                  onChange={(e) => handleInputChange('clientName', e.target.value)}
+                  placeholder="Enter client name"
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="siteContactName">Site Contact Name</Label>
+                  <Input
+                    id="siteContactName"
+                    value={formData.siteContactName}
+                    onChange={(e) => handleInputChange('siteContactName', e.target.value)}
+                    placeholder="Contact person name"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="siteContactPhone">Site Contact Phone</Label>
+                  <Input
+                    id="siteContactPhone"
+                    value={formData.siteContactPhone}
+                    onChange={(e) => handleInputChange('siteContactPhone', e.target.value)}
+                    placeholder="Phone number"
+                    type="tel"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
                 <Label htmlFor="surveyType">Survey Type *</Label>
                 <Select value={formData.surveyType} onValueChange={(value) => handleInputChange('surveyType', value)}>
                   <SelectTrigger>
@@ -156,6 +153,22 @@ export default function NewSurvey() {
               </div>
 
               <div className="space-y-2">
+                <Label htmlFor="documentType">Document Type *</Label>
+                <Select value={formData.documentType} onValueChange={(value) => handleInputChange('documentType', value)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select document type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="AMPR">Asbestos Management Plan and Register (AMPR)</SelectItem>
+                    <SelectItem value="AMPRU">Asbestos Management Plan and Register Update (AMPRU)</SelectItem>
+                    <SelectItem value="ARRA">Asbestos Register and Risk Assessment (ARRA)</SelectItem>
+                    <SelectItem value="ARRAU">Asbestos Register and Risk Assessment Update (ARRAU)</SelectItem>
+                    <SelectItem value="HSMR">Pre-Demolition Survey (Hazardous Materials Survey Report) (HSMR)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
                 <Label htmlFor="surveyor">Surveyor *</Label>
                 <Input
                   id="surveyor"
@@ -166,26 +179,6 @@ export default function NewSurvey() {
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="gpsCoordinates">GPS Coordinates</Label>
-                <div className="flex gap-2">
-                  <Input
-                    id="gpsCoordinates"
-                    value={formData.gpsCoordinates}
-                    onChange={(e) => handleInputChange('gpsCoordinates', e.target.value)}
-                    placeholder="Latitude, Longitude"
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={getCurrentLocation}
-                    disabled={isLoadingLocation}
-                  >
-                    <MapPin className="h-4 w-4" />
-                    {isLoadingLocation ? 'Getting...' : 'Get Location'}
-                  </Button>
-                </div>
-              </div>
 
               <Button 
                 type="submit" 

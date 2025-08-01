@@ -115,18 +115,26 @@ export const generateDOCXReport = async (surveyData: SurveyData): Promise<void> 
             })
           ]
         }),
-        ...(survey.gpsCoordinates ? [
-          new TableRow({
-            children: [
-              new TableCell({
-                children: [new Paragraph({ children: [new TextRun({ text: "GPS Coordinates:", bold: true })] })]
-              }),
-              new TableCell({
-                children: [new Paragraph({ children: [new TextRun({ text: survey.gpsCoordinates })] })]
-              })
-            ]
-          })
-        ] : [])
+        new TableRow({
+          children: [
+            new TableCell({
+              children: [new Paragraph({ children: [new TextRun({ text: "Client Name:", bold: true })] })]
+            }),
+            new TableCell({
+              children: [new Paragraph({ children: [new TextRun({ text: survey.clientName })] })]
+            })
+          ]
+        }),
+        new TableRow({
+          children: [
+            new TableCell({
+              children: [new Paragraph({ children: [new TextRun({ text: "Document Type:", bold: true })] })]
+            }),
+            new TableCell({
+              children: [new Paragraph({ children: [new TextRun({ text: survey.documentType })] })]
+            })
+          ]
+        })
       ]
     })
   ];
@@ -189,7 +197,7 @@ export const generateDOCXReport = async (surveyData: SurveyData): Promise<void> 
                 shading: { fill: "F1F1F1" }
               }),
               new TableCell({
-                children: [new Paragraph({ children: [new TextRun({ text: "Item Description", bold: true })] })],
+                children: [new Paragraph({ children: [new TextRun({ text: "Item Use", bold: true })] })],
                 width: { size: 20, type: WidthType.PERCENTAGE },
                 shading: { fill: "F1F1F1" }
               }),
@@ -232,10 +240,10 @@ export const generateDOCXReport = async (surveyData: SurveyData): Promise<void> 
                   children: [new Paragraph({ children: [new TextRun({ text: item.referenceNumber })] })]
                 }),
                 new TableCell({
-                  children: [new Paragraph({ children: [new TextRun({ text: item.locationDescription })] })]
+                  children: [new Paragraph({ children: [new TextRun({ text: `${item.buildingArea} - ${item.location1} - ${item.location2}` })] })]
                 }),
                 new TableCell({
-                  children: [new Paragraph({ children: [new TextRun({ text: item.itemDescription })] })]
+                  children: [new Paragraph({ children: [new TextRun({ text: item.itemUse })] })]
                 }),
                 new TableCell({
                   children: [new Paragraph({ children: [new TextRun({ text: item.materialType })] })]
