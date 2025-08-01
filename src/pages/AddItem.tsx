@@ -1,6 +1,4 @@
 import { useState, useEffect } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { useParams, useNavigate } from "react-router-dom";
 import { Navigation } from "@/components/Navigation";
 import { Button } from "@/components/ui/button";
@@ -19,7 +17,6 @@ import { capturePhoto, resizeImage } from "@/utils/camera";
 import { savePhoto } from "@/utils/storage";
 import { Item } from "@/types/survey";
 import { useToast } from "@/hooks/use-toast";
-import { itemSchema, ItemFormData } from "@/schemas/survey";
 import { saveDraft, loadDraft, removeDraft } from "@/utils/draftStorage";
 
 const MATERIAL_TYPES = [
