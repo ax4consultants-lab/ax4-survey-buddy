@@ -7,7 +7,7 @@ import { RiskBadge } from "@/components/RiskBadge";
 import { Plus, FileText, Download, MapPin, Clock, Building2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { getSurveys, getItemsBySurveyId, getSurveyData } from "@/utils/storage";
-import { generatePDFReport } from "@/utils/pdf";
+import { generateDOCXReport } from "@/utils/docx";
 import { Survey } from "@/types/survey";
 import { useToast } from "@/hooks/use-toast";
 
@@ -32,15 +32,15 @@ export default function Dashboard() {
         return;
       }
       
-      await generatePDFReport(surveyData);
+      await generateDOCXReport(surveyData);
       toast({
         title: "Success",
-        description: "PDF report generated successfully",
+        description: "DOCX report generated successfully",
       });
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to generate PDF report",
+        description: "Failed to generate DOCX report",
         variant: "destructive",
       });
     }
@@ -167,7 +167,7 @@ export default function Dashboard() {
                           size="sm"
                         >
                           <Download className="h-4 w-4" />
-                          PDF
+                          DOCX
                         </Button>
                       </div>
                     </CardHeader>

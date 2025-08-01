@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { RiskBadge } from "@/components/RiskBadge";
 import { Plus, Building2, Package, FileText, Download } from "lucide-react";
 import { getSurveyById, getRoomsBySurveyId, getItemsByRoomId, getSurveyData } from "@/utils/storage";
-import { generatePDFReport } from "@/utils/pdf";
+import { generateDOCXReport } from "@/utils/docx";
 import { Survey, Room, Item } from "@/types/survey";
 import { useToast } from "@/hooks/use-toast";
 
@@ -47,15 +47,15 @@ export default function SurveyDetail() {
         return;
       }
       
-      await generatePDFReport(surveyData);
+      await generateDOCXReport(surveyData);
       toast({
         title: "Success",
-        description: "PDF report generated successfully",
+        description: "DOCX report generated successfully",
       });
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to generate PDF report",
+        description: "Failed to generate DOCX report",
         variant: "destructive",
       });
     }
@@ -88,7 +88,7 @@ export default function SurveyDetail() {
               size="sm"
             >
               <Download className="h-4 w-4" />
-              PDF
+              DOCX
             </Button>
             <Button 
               onClick={() => navigate(`/survey/${surveyId}/add-room`)}
