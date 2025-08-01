@@ -1,4 +1,6 @@
 import { useState, useEffect } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { useParams, useNavigate } from "react-router-dom";
 import { Navigation } from "@/components/Navigation";
 import { Button } from "@/components/ui/button";
@@ -9,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { RecommendationSelect } from "@/components/RecommendationSelect";
 import { Save, Camera, Package, Building2, AlertTriangle, Upload, Hash } from "lucide-react";
 import { saveItem, generateId, getRoomsBySurveyId, getSurveyById } from "@/utils/storage";
@@ -16,6 +19,8 @@ import { capturePhoto, resizeImage } from "@/utils/camera";
 import { savePhoto } from "@/utils/storage";
 import { Item } from "@/types/survey";
 import { useToast } from "@/hooks/use-toast";
+import { itemSchema, ItemFormData } from "@/schemas/survey";
+import { saveDraft, loadDraft, removeDraft } from "@/utils/draftStorage";
 
 const MATERIAL_TYPES = [
   "Fibrous cement lining",
@@ -52,32 +57,37 @@ export default function AddItem() {
   const [photos, setPhotos] = useState<string[]>([]);
   const [isCapturing, setIsCapturing] = useState(false);
   const [photoReferences, setPhotoReferences] = useState<string[]>([]);
+  const draftKey = `add-item-${surveyId}`;
   
-  const [formData, setFormData] = useState({
-    buildingArea: '',
-    externalInternal: 'Not Specified' as Item['externalInternal'],
-    location1: '',
-    location2: '',
-    itemUse: '',
-    materialType: '',
-    
-    sampleStatus: 'Not Sampled' as Item['sampleStatus'],
-    sampleReference: '',
-    quantity: '',
-    unit: '' as Item['unit'],
-    length: '',
-    width: '',
-    diameter: '',
-    thickness: '',
-    painted: null as boolean | null,
-    friable: null as boolean | null,
-    condition: '' as Item['condition'],
-    accessibility: '' as Item['accessibility'],
-    warningLabelsVisible: null as boolean | null,
-    riskLevel: 'Low' as Item['riskLevel'],
-    recommendation: '',
-    notes: '',
+  const form = useForm<ItemFormData>({
+    resolver: zodResolver(itemSchema),
+    defaultValues: {
+      buildingArea: '',
+      externalInternal: 'Not Specified',
+      location1: '',
+      location2: '',
+      itemUse: '',
+      materialType: '',
+      sampleStatus: 'Not Sampled',
+      sampleReference: '',
+      quantity: '',
+      length: '',
+      width: '',
+      diameter: '',
+      thickness: '',
+      painted: null,
+      friable: null,
+      condition: 'Good',
+      accessibility: 'Accessible',
+      warningLabelsVisible: null,
+      riskLevel: 'Low',
+      recommendation: '',
+      notes: '',
+    }
   });
+
+  const { watch } = form;
+  const formValues = watch();
 
   useEffect(() => {
     if (!surveyId) return;
@@ -86,9 +96,30 @@ export default function AddItem() {
     setSurvey(surveyData);
   }, [surveyId]);
 
-  const handleInputChange = (field: string, value: string | number | boolean | null | string[]) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-  };
+  // Load draft on mount
+  useEffect(() => {
+    if (!surveyId) return;
+    
+    const draft = loadDraft(draftKey);
+    if (draft) {
+      form.reset(draft);
+      toast({
+        title: "Draft restored",
+        description: "Your previous item data has been restored",
+      });
+    }
+  }, [surveyId, form, toast, draftKey]);
+
+  // Auto-save draft
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if (Object.values(formValues).some(value => value !== '' && value !== null)) {
+        saveDraft(draftKey, formValues, surveyId);
+      }
+    }, 2000);
+
+    return () => clearTimeout(timeoutId);
+  }, [formValues, draftKey, surveyId]);
 
   const handleTakePhoto = async () => {
     setIsCapturing(true);
@@ -168,56 +199,43 @@ export default function AddItem() {
     setPhotoReferences(prev => prev.filter((_, i) => i !== index));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    const requiredFields = ['buildingArea', 'location1', 'location2', 'itemUse', 'materialType', 'condition', 'accessibility', 'riskLevel', 'recommendation'];
-    const missingFields = requiredFields.filter(field => !formData[field as keyof typeof formData]);
-    
-    if (missingFields.length > 0) {
-      toast({
-        title: "Missing information",
-        description: "Please fill in all required fields",
-        variant: "destructive",
-      });
-      return;
-    }
-
+  const onSubmit = (data: ItemFormData) => {
     if (!surveyId) return;
 
     const item: Item = {
       itemId: generateId(),
       surveyId: surveyId!,
       referenceNumber: generateId(), // Auto-generate reference
-      buildingArea: formData.buildingArea,
-      externalInternal: formData.externalInternal,
-      location1: formData.location1,
-      location2: formData.location2,
-      itemUse: formData.itemUse,
-      materialType: formData.materialType,
+      buildingArea: data.buildingArea,
+      externalInternal: data.externalInternal,
+      location1: data.location1,
+      location2: data.location2,
+      itemUse: data.itemUse,
+      materialType: data.materialType,
       asbestosTypes: [],
-      sampleStatus: formData.sampleStatus,
-      sampleReference: formData.sampleReference || undefined,
-      quantity: formData.quantity ? parseFloat(formData.quantity) : undefined,
-      unit: formData.unit || undefined,
-      length: formData.length ? parseFloat(formData.length) : undefined,
-      width: formData.width ? parseFloat(formData.width) : undefined,
-      diameter: formData.diameter ? parseFloat(formData.diameter) : undefined,
-      thickness: formData.thickness ? parseFloat(formData.thickness) : undefined,
-      painted: formData.painted,
-      friable: formData.friable,
-      condition: formData.condition,
-      accessibility: formData.accessibility,
-      warningLabelsVisible: formData.warningLabelsVisible,
-      riskLevel: formData.riskLevel,
-      recommendation: formData.recommendation,
-      notes: formData.notes || undefined,
+      sampleStatus: data.sampleStatus,
+      sampleReference: data.sampleReference || undefined,
+      quantity: data.quantity ? parseFloat(data.quantity) : undefined,
+      unit: data.unit || undefined,
+      length: data.length ? parseFloat(data.length) : undefined,
+      width: data.width ? parseFloat(data.width) : undefined,
+      diameter: data.diameter ? parseFloat(data.diameter) : undefined,
+      thickness: data.thickness ? parseFloat(data.thickness) : undefined,
+      painted: data.painted,
+      friable: data.friable,
+      condition: data.condition,
+      accessibility: data.accessibility,
+      warningLabelsVisible: data.warningLabelsVisible,
+      riskLevel: data.riskLevel,
+      recommendation: data.recommendation,
+      notes: data.notes || undefined,
       photos,
       photoReferences,
       createdAt: new Date().toISOString(),
     };
 
     saveItem(item);
+    removeDraft(draftKey); // Clear draft after successful save
     
     toast({
       title: "Item added",
@@ -225,30 +243,7 @@ export default function AddItem() {
     });
     
     // Reset form for next item
-    setFormData({
-      buildingArea: '',
-      externalInternal: 'Not Specified',
-      location1: '',
-      location2: '',
-      itemUse: '',
-      materialType: '',
-      sampleStatus: 'Not Sampled',
-      sampleReference: '',
-      quantity: '',
-      unit: '',
-      length: '',
-      width: '',
-      diameter: '',
-      thickness: '',
-      painted: null,
-      friable: null,
-      condition: '',
-      accessibility: '',
-      warningLabelsVisible: null,
-      riskLevel: 'Low',
-      recommendation: '',
-      notes: '',
-    });
+    form.reset();
     setPhotos([]);
     setPhotoReferences([]);
   };
@@ -306,7 +301,8 @@ export default function AddItem() {
           </CardHeader>
           
           <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
 
               {/* Hierarchical Location Structure */}
               <div className="space-y-4 border p-4 rounded-lg">
@@ -683,7 +679,8 @@ export default function AddItem() {
                 <Save className="h-4 w-4" />
                 Save Item & Add Another
               </Button>
-            </form>
+              </form>
+            </Form>
           </CardContent>
         </Card>
       </div>
