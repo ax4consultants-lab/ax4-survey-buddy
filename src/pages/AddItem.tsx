@@ -18,43 +18,40 @@ import { Item } from "@/types/survey";
 import { useToast } from "@/hooks/use-toast";
 
 const MATERIAL_TYPES = [
-  'fibrous cement sheet',
-  'fibrous cement plank',
-  'fibrous cement "thick" sheet',
-  'fibre impregnated bituminous membrane tanking ("Malthoid")',
-  'fibre impregnated tar based glue ("Black-Jack")',
-  'fibre impregnated resin boards ("Zelemite" or "Ausbestos")',
-  'fibre impregnated tar coating to metal sheeting ("Galbestos")',
-  'fibre impregnated plastic ("Bakelite")',
-  'pressed asbestos board ("Millboard")',
-  'vinyl floor tiles',
-  'fibre backed vinyl floor sheeting',
-  'electrical wire shielding',
-  'lift electrical arc shields',
-  'lift brake friction material',
-  'woven fibre electrical arc shields',
-  'fire doors (core material)',
-  'cast pipe lagging',
-  'asbestos rope',
-  'penetration packing material',
-  'fire rating (Limpet)',
-  'gaskets material',
-  'joint sealant ("Mastic")',
-  'possible internal components'
+  "Fibrous cement sheet",
+  "Fibrous cement plank",
+  "Fibrous cement 'thick' sheet",
+  "Fibre impregnated bituminous membrane tanking ('Malthoid')",
+  "Fibre impregnated tar based glue ('Black-Jack')",
+  "Fibre impregnated resin boards ('Zelemite' or 'Ausbestos')",
+  "Fibre impregnated tar coating to metal sheeting ('Galbestos')",
+  "Fibre impregnated plastic ('Bakelite')",
+  "Pressed asbestos board ('Millboard')",
+  "Vinyl floor tiles",
+  "Fibre backed vinyl floor sheeting",
+  "Electrical wire shielding",
+  "Lift electrical arc shields",
+  "Lift brake friction material",
+  "Woven fibre electrical arc shields",
+  "Fire doors (core material)",
+  "Cast pipe lagging",
+  "Asbestos rope",
+  "Penetration packing material",
+  "Fire rating (Limpet)",
+  "Gaskets material",
+  "Joint sealant ('Mastic')",
+  "Possible internal components"
 ];
 
 export default function AddItem() {
-  const { surveyId, roomId } = useParams<{ surveyId: string; roomId: string }>();
+  const { surveyId } = useParams<{ surveyId: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [survey, setSurvey] = useState<any>(null);
-  const [room, setRoom] = useState<any>(null);
   const [photos, setPhotos] = useState<string[]>([]);
   const [isCapturing, setIsCapturing] = useState(false);
   
   const [formData, setFormData] = useState({
-    referenceNumber: '',
-    photoReference: '',
     buildingArea: '',
     externalInternal: '' as Item['externalInternal'],
     location1: '',
@@ -66,22 +63,16 @@ export default function AddItem() {
     condition: '' as Item['condition'],
     accessibility: '' as Item['accessibility'],
     warningLabelsVisible: null as boolean | null,
-    riskLevel: '' as Item['riskLevel'] | '',
     recommendation: '',
-    warningLabelsAffixed: '',
     notes: '',
   });
 
   useEffect(() => {
-    if (!surveyId || !roomId) return;
+    if (!surveyId) return;
     
     const surveyData = getSurveyById(surveyId);
-    const rooms = getRoomsBySurveyId(surveyId);
-    const roomData = rooms.find(r => r.roomId === roomId);
-    
     setSurvey(surveyData);
-    setRoom(roomData);
-  }, [surveyId, roomId]);
+  }, [surveyId]);
 
   const handleInputChange = (field: string, value: string | number | boolean | null) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -97,9 +88,7 @@ export default function AddItem() {
       savePhoto(photoId, resizedPhoto);
       setPhotos(prev => [...prev, photoId]);
       
-      if (!formData.photoReference) {
-        handleInputChange('photoReference', photoId);
-      }
+      // Photo captured and saved
       
       toast({
         title: "Photo captured",
@@ -119,7 +108,7 @@ export default function AddItem() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    const requiredFields = ['referenceNumber', 'buildingArea', 'externalInternal', 'location1', 'location2', 'itemUse', 'materialType', 'riskLevel', 'recommendation'];
+    const requiredFields = ['buildingArea', 'externalInternal', 'location1', 'location2', 'itemUse', 'materialType', 'condition', 'accessibility', 'recommendation'];
     const missingFields = requiredFields.filter(field => !formData[field as keyof typeof formData]);
     
     if (missingFields.length > 0) {
@@ -131,13 +120,12 @@ export default function AddItem() {
       return;
     }
 
-    if (!roomId) return;
+    if (!surveyId) return;
 
     const item: Item = {
       itemId: generateId(),
-      roomId,
-      referenceNumber: formData.referenceNumber,
-      photoReference: formData.photoReference || undefined,
+      roomId: '', // No longer using rooms
+      referenceNumber: generateId(), // Auto-generate reference
       buildingArea: formData.buildingArea,
       externalInternal: formData.externalInternal,
       location1: formData.location1,
@@ -149,9 +137,8 @@ export default function AddItem() {
       condition: formData.condition,
       accessibility: formData.accessibility,
       warningLabelsVisible: formData.warningLabelsVisible,
-      riskLevel: formData.riskLevel as Item['riskLevel'],
+      riskLevel: 'Low', // Will be calculated based on conditions
       recommendation: formData.recommendation,
-      warningLabelsAffixed: formData.warningLabelsAffixed ? parseInt(formData.warningLabelsAffixed) : undefined,
       notes: formData.notes || undefined,
       photos,
       createdAt: new Date().toISOString(),
@@ -166,8 +153,6 @@ export default function AddItem() {
     
     // Reset form for next item
     setFormData({
-      referenceNumber: '',
-      photoReference: '',
       buildingArea: '',
       externalInternal: '',
       location1: '',
@@ -179,9 +164,7 @@ export default function AddItem() {
       condition: '',
       accessibility: '',
       warningLabelsVisible: null,
-      riskLevel: '',
       recommendation: '',
-      warningLabelsAffixed: '',
       notes: '',
     });
     setPhotos([]);
@@ -196,14 +179,14 @@ export default function AddItem() {
     }
   };
 
-  if (!survey || !room) {
+  if (!survey) {
     return <div className="min-h-screen bg-background"></div>;
   }
 
   return (
     <div className="min-h-screen bg-background">
       <Navigation 
-        title={`Add Item - ${room.roomName}`}
+        title="Add Item"
         showBack={true}
         actions={
           <Button 
@@ -211,20 +194,20 @@ export default function AddItem() {
             variant="outline"
             size="sm"
           >
-            Finish Room
+            Finish Survey
           </Button>
         }
       />
       
       <div className="container mx-auto p-4 max-w-2xl">
-        {/* Room Context */}
+        {/* Survey Context */}
         <Card className="mb-4">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <Building2 className="h-5 w-5 text-primary" />
+              <Package className="h-5 w-5 text-primary" />
               <div>
-                <p className="font-medium">{room.roomName}</p>
-                <p className="text-sm text-muted-foreground">{survey.siteName}</p>
+                <p className="font-medium">{survey.siteName}</p>
+                <p className="text-sm text-muted-foreground">Client: {survey.clientName}</p>
                 <p className="text-xs text-muted-foreground">Document Type: {survey.documentType}</p>
               </div>
             </div>
@@ -241,35 +224,13 @@ export default function AddItem() {
           
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="referenceNumber">Reference Number *</Label>
-                  <Input
-                    id="referenceNumber"
-                    value={formData.referenceNumber}
-                    onChange={(e) => handleInputChange('referenceNumber', e.target.value)}
-                    placeholder="e.g., A01, B05"
-                    required
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="photoReference">Photo Reference</Label>
-                  <Input
-                    id="photoReference"
-                    value={formData.photoReference}
-                    onChange={(e) => handleInputChange('photoReference', e.target.value)}
-                    placeholder="Optional photo ID"
-                  />
-                </div>
-              </div>
 
               {/* Hierarchical Location Structure */}
               <div className="space-y-4 border p-4 rounded-lg">
                 <h3 className="font-medium text-sm text-muted-foreground">Location Hierarchy</h3>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="buildingArea">1. Building/Area *</Label>
+                  <Label htmlFor="buildingArea">Building or Area (e.g., Main Residence, Yard, Building 1) *</Label>
                   <Input
                     id="buildingArea"
                     value={formData.buildingArea}
@@ -280,7 +241,7 @@ export default function AddItem() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="externalInternal">2. External/Internal *</Label>
+                  <Label htmlFor="externalInternal">External or Internal *</Label>
                   <Select value={formData.externalInternal} onValueChange={(value) => handleInputChange('externalInternal', value)}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select location type" />
@@ -288,12 +249,13 @@ export default function AddItem() {
                     <SelectContent>
                       <SelectItem value="External">External</SelectItem>
                       <SelectItem value="Internal">Internal</SelectItem>
+                      <SelectItem value="">Empty</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="location1">3. Location 1 - {formData.externalInternal === 'External' ? 'Elevations' : 'Sections'} *</Label>
+                  <Label htmlFor="location1">Location 1 (e.g., Elevations if External, Sections if Internal) *</Label>
                   <Input
                     id="location1"
                     value={formData.location1}
@@ -304,7 +266,7 @@ export default function AddItem() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="location2">4. Location 2 - Rooms/Specific Area *</Label>
+                  <Label htmlFor="location2">Location 2 (e.g., Rooms or Specific Area) *</Label>
                   <Input
                     id="location2"
                     value={formData.location2}
@@ -316,7 +278,7 @@ export default function AddItem() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="itemUse">5. Item Use *</Label>
+                <Label htmlFor="itemUse">Item Use (e.g., cladding, lining, splash-back, floor covering) *</Label>
                 <Input
                   id="itemUse"
                   value={formData.itemUse}
@@ -327,7 +289,7 @@ export default function AddItem() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="materialType">6. Material Type *</Label>
+                <Label htmlFor="materialType">Material Type *</Label>
                 <Select value={formData.materialType} onValueChange={(value) => handleInputChange('materialType', value)}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select material type" />
@@ -344,7 +306,7 @@ export default function AddItem() {
 
               {/* Condition Assessment */}
               <div className="space-y-4 border p-4 rounded-lg">
-                <h3 className="font-medium text-sm text-muted-foreground">7. Condition Assessment</h3>
+                <h3 className="font-medium text-sm text-muted-foreground">Condition Assessment</h3>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-3">
@@ -418,42 +380,7 @@ export default function AddItem() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="riskLevel">Risk Level *</Label>
-                <Select value={formData.riskLevel} onValueChange={(value) => handleInputChange('riskLevel', value)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select risk level" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Low">
-                      <div className="flex items-center gap-2">
-                        <div className="w-3 h-3 rounded-full bg-risk-low"></div>
-                        Low Risk
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="Medium">
-                      <div className="flex items-center gap-2">
-                        <div className="w-3 h-3 rounded-full bg-risk-medium"></div>
-                        Medium Risk
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="High">
-                      <div className="flex items-center gap-2">
-                        <div className="w-3 h-3 rounded-full bg-risk-high"></div>
-                        High Risk
-                      </div>
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-                {formData.riskLevel && (
-                  <Badge className={getRiskColor(formData.riskLevel)}>
-                    {formData.riskLevel === 'High' && <AlertTriangle className="w-3 h-3 mr-1" />}
-                    {formData.riskLevel} Risk
-                  </Badge>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="recommendation">9. Recommendation *</Label>
+                <Label htmlFor="recommendation">Recommended Actions *</Label>
                 {survey && (
                   <RecommendationSelect
                     documentType={survey.documentType}
@@ -464,19 +391,7 @@ export default function AddItem() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="warningLabelsAffixed">Warning Labels Affixed</Label>
-                <Input
-                  id="warningLabelsAffixed"
-                  type="number"
-                  value={formData.warningLabelsAffixed}
-                  onChange={(e) => handleInputChange('warningLabelsAffixed', e.target.value)}
-                  placeholder="Number of labels (optional)"
-                  min="0"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="notes">8. Notes</Label>
+                <Label htmlFor="notes">Notes (e.g., friability details, accessibility issues)</Label>
                 <Textarea
                   id="notes"
                   value={formData.notes}
