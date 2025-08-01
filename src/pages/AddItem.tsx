@@ -18,6 +18,7 @@ import { Item } from "@/types/survey";
 import { useToast } from "@/hooks/use-toast";
 
 const MATERIAL_TYPES = [
+  "Fibrous cement lining",
   "Fibrous cement sheet",
   "Fibrous cement plank",
   "Fibrous cement 'thick' sheet",
@@ -58,6 +59,7 @@ export default function AddItem() {
     location2: '',
     itemUse: '',
     materialType: '',
+    asbestosTypes: [] as string[],
     sampleStatus: 'Not Sampled' as Item['sampleStatus'],
     sampleReference: '',
     quantity: '',
@@ -71,6 +73,7 @@ export default function AddItem() {
     condition: '' as Item['condition'],
     accessibility: '' as Item['accessibility'],
     warningLabelsVisible: null as boolean | null,
+    riskLevel: 'Low' as Item['riskLevel'],
     recommendation: '',
     notes: '',
   });
@@ -82,7 +85,7 @@ export default function AddItem() {
     setSurvey(surveyData);
   }, [surveyId]);
 
-  const handleInputChange = (field: string, value: string | number | boolean | null) => {
+  const handleInputChange = (field: string, value: string | number | boolean | null | string[]) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
@@ -116,13 +119,22 @@ export default function AddItem() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    const requiredFields = ['buildingArea', 'location1', 'location2', 'itemUse', 'materialType', 'sampleStatus', 'condition', 'accessibility', 'recommendation'];
+    const requiredFields = ['buildingArea', 'location1', 'location2', 'itemUse', 'materialType', 'condition', 'accessibility', 'riskLevel', 'recommendation'];
     const missingFields = requiredFields.filter(field => !formData[field as keyof typeof formData]);
     
     if (missingFields.length > 0) {
       toast({
         title: "Missing information",
         description: "Please fill in all required fields",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (formData.asbestosTypes.length === 0) {
+      toast({
+        title: "Missing information",
+        description: "Please select at least one asbestos type",
         variant: "destructive",
       });
       return;
@@ -140,6 +152,7 @@ export default function AddItem() {
       location2: formData.location2,
       itemUse: formData.itemUse,
       materialType: formData.materialType,
+      asbestosTypes: formData.asbestosTypes,
       sampleStatus: formData.sampleStatus,
       sampleReference: formData.sampleReference || undefined,
       quantity: formData.quantity ? parseFloat(formData.quantity) : undefined,
@@ -153,7 +166,7 @@ export default function AddItem() {
       condition: formData.condition,
       accessibility: formData.accessibility,
       warningLabelsVisible: formData.warningLabelsVisible,
-      riskLevel: 'Low', // Will be calculated based on conditions
+      riskLevel: formData.riskLevel,
       recommendation: formData.recommendation,
       notes: formData.notes || undefined,
       photos,
@@ -175,6 +188,7 @@ export default function AddItem() {
       location2: '',
       itemUse: '',
       materialType: '',
+      asbestosTypes: [],
       sampleStatus: 'Not Sampled',
       sampleReference: '',
       quantity: '',
@@ -188,6 +202,7 @@ export default function AddItem() {
       condition: '',
       accessibility: '',
       warningLabelsVisible: null,
+      riskLevel: 'Low',
       recommendation: '',
       notes: '',
     });
@@ -326,6 +341,29 @@ export default function AddItem() {
                     ))}
                   </SelectContent>
                 </Select>
+              </div>
+
+              {/* Asbestos Types */}
+              <div className="space-y-2">
+                <Label htmlFor="asbestosTypes">Asbestos Types *</Label>
+                <div className="space-y-2">
+                  {["White 'Chrysotile'", "Brown 'Amosite'", "Blue 'Crocidolite'"].map((type) => (
+                    <div key={type} className="flex items-center space-x-2">
+                      <Checkbox 
+                        id={type}
+                        checked={formData.asbestosTypes.includes(type)}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            handleInputChange('asbestosTypes', [...formData.asbestosTypes, type]);
+                          } else {
+                            handleInputChange('asbestosTypes', formData.asbestosTypes.filter(t => t !== type));
+                          }
+                        }}
+                      />
+                      <Label htmlFor={type} className="text-sm">{type}</Label>
+                    </div>
+                  ))}
+                </div>
               </div>
 
               {/* Sample Status */}
@@ -516,6 +554,21 @@ export default function AddItem() {
                     </div>
                   </div>
                 </div>
+              </div>
+
+              {/* Risk Level */}
+              <div className="space-y-2">
+                <Label htmlFor="riskLevel">Risk Level *</Label>
+                <Select value={formData.riskLevel} onValueChange={(value) => handleInputChange('riskLevel', value)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select risk level" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Low">Low</SelectItem>
+                    <SelectItem value="Medium">Medium</SelectItem>
+                    <SelectItem value="High">High</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="space-y-2">

@@ -31,6 +31,31 @@ export const getSurveyById = (surveyId: string): Survey | undefined => {
   return surveys.find(s => s.surveyId === surveyId);
 };
 
+export const deleteSurvey = (surveyId: string): void => {
+  // Delete survey
+  const surveys = getSurveys();
+  const filteredSurveys = surveys.filter(s => s.surveyId !== surveyId);
+  localStorage.setItem(STORAGE_KEYS.SURVEYS, JSON.stringify(filteredSurveys));
+  
+  // Delete associated rooms
+  const rooms = getRooms();
+  const filteredRooms = rooms.filter(r => r.surveyId !== surveyId);
+  localStorage.setItem(STORAGE_KEYS.ROOMS, JSON.stringify(filteredRooms));
+  
+  // Delete associated items
+  const items = getItems();
+  const filteredItems = items.filter(i => i.surveyId !== surveyId);
+  localStorage.setItem(STORAGE_KEYS.ITEMS, JSON.stringify(filteredItems));
+  
+  // Delete associated photos
+  const itemsToDelete = items.filter(i => i.surveyId === surveyId);
+  itemsToDelete.forEach(item => {
+    item.photos.forEach(photoId => {
+      localStorage.removeItem(`${STORAGE_KEYS.PHOTOS}_${photoId}`);
+    });
+  });
+};
+
 // Room operations
 export const saveRoom = (room: Room): void => {
   const rooms = getRooms();

@@ -4,9 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { RiskBadge } from "@/components/RiskBadge";
-import { Plus, FileText, Download, MapPin, Clock, Building2 } from "lucide-react";
+import { Plus, FileText, Download, MapPin, Clock, Building2, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { getSurveys, getItemsBySurveyId, getSurveyData } from "@/utils/storage";
+import { getSurveys, getItemsBySurveyId, getSurveyData, deleteSurvey } from "@/utils/storage";
 import { generateDOCXReport } from "@/utils/docx";
 import { Survey } from "@/types/survey";
 import { useToast } from "@/hooks/use-toast";
@@ -42,6 +42,17 @@ export default function Dashboard() {
         title: "Error",
         description: "Failed to generate DOCX report",
         variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteSurvey = (surveyId: string, siteName: string) => {
+    if (confirm(`Are you sure you want to delete the survey for "${siteName}"? This action cannot be undone.`)) {
+      deleteSurvey(surveyId);
+      setSurveys(getSurveys());
+      toast({
+        title: "Survey deleted",
+        description: "Survey and all associated data removed successfully",
       });
     }
   };
@@ -161,14 +172,23 @@ export default function Dashboard() {
                             <Badge variant="outline">{survey.surveyType}</Badge>
                           </div>
                         </div>
-                        <Button
-                          onClick={() => handleGenerateReport(survey.surveyId)}
-                          variant="outline"
-                          size="sm"
-                        >
-                          <Download className="h-4 w-4" />
-                          DOCX
-                        </Button>
+                        <div className="flex gap-2">
+                          <Button
+                            onClick={() => handleGenerateReport(survey.surveyId)}
+                            variant="outline"
+                            size="sm"
+                          >
+                            <Download className="h-4 w-4" />
+                            DOCX
+                          </Button>
+                          <Button
+                            onClick={() => handleDeleteSurvey(survey.surveyId, survey.siteName)}
+                            variant="destructive"
+                            size="sm"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </div>
                     </CardHeader>
                     

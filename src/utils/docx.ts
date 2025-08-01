@@ -3,14 +3,24 @@ import { saveAs } from 'file-saver';
 import { SurveyData } from '@/types/survey';
 
 export const generateDOCXReport = async (surveyData: SurveyData): Promise<void> => {
-  const { survey, rooms, items } = surveyData;
+  const { survey, items } = surveyData;
   
-  // Group items by survey (no longer using rooms)
-  const surveyItems = items.filter(item => item.surveyId === survey.surveyId);
+  // Group items by building area and external/internal for structured report
+  const groupedItems = items.reduce((acc, item) => {
+    const groupKey = `${item.buildingArea}_${item.externalInternal}`;
+    if (!acc[groupKey]) {
+      acc[groupKey] = {
+        buildingArea: item.buildingArea,
+        externalInternal: item.externalInternal,
+        items: []
+      };
+    }
+    acc[groupKey].items.push(item);
+    return acc;
+  }, {} as Record<string, { buildingArea: string; externalInternal: string; items: any[] }>);
 
-  // Create document sections
   const children = [
-    // Header
+    // Company Header
     new Paragraph({
       children: [
         new TextRun({
@@ -27,7 +37,7 @@ export const generateDOCXReport = async (surveyData: SurveyData): Promise<void> 
     new Paragraph({
       children: [
         new TextRun({
-          text: "ASBESTOS SURVEY REPORT",
+          text: "ASBESTOS MATERIAL PRESENCE REPORT",
           bold: true,
           size: 28
         })
@@ -36,269 +46,266 @@ export const generateDOCXReport = async (surveyData: SurveyData): Promise<void> 
       spacing: { after: 400 }
     }),
 
-    // Survey Information Table
+    // Job Information
     new Paragraph({
       children: [
         new TextRun({
-          text: "SURVEY INFORMATION",
+          text: `Job ID: ${survey.jobId}`,
           bold: true,
           size: 24
         })
       ],
-      heading: HeadingLevel.HEADING_1,
-      spacing: { before: 400, after: 200 }
+      spacing: { after: 200 }
     }),
 
-    new Table({
-      width: { size: 100, type: WidthType.PERCENTAGE },
-      borders: {
-        top: { style: BorderStyle.SINGLE, size: 1 },
-        bottom: { style: BorderStyle.SINGLE, size: 1 },
-        left: { style: BorderStyle.SINGLE, size: 1 },
-        right: { style: BorderStyle.SINGLE, size: 1 },
-        insideHorizontal: { style: BorderStyle.SINGLE, size: 1 },
-        insideVertical: { style: BorderStyle.SINGLE, size: 1 }
-      },
-      rows: [
-        new TableRow({
-          children: [
-            new TableCell({
-              children: [new Paragraph({ children: [new TextRun({ text: "Job ID:", bold: true })] })],
-              width: { size: 30, type: WidthType.PERCENTAGE }
-            }),
-            new TableCell({
-              children: [new Paragraph({ children: [new TextRun({ text: survey.jobId })] })],
-              width: { size: 70, type: WidthType.PERCENTAGE }
-            })
-          ]
-        }),
-        new TableRow({
-          children: [
-            new TableCell({
-              children: [new Paragraph({ children: [new TextRun({ text: "Site Name:", bold: true })] })]
-            }),
-            new TableCell({
-              children: [new Paragraph({ children: [new TextRun({ text: survey.siteName })] })]
-            })
-          ]
-        }),
-        new TableRow({
-          children: [
-            new TableCell({
-              children: [new Paragraph({ children: [new TextRun({ text: "Survey Type:", bold: true })] })]
-            }),
-            new TableCell({
-              children: [new Paragraph({ children: [new TextRun({ text: survey.surveyType })] })]
-            })
-          ]
-        }),
-        new TableRow({
-          children: [
-            new TableCell({
-              children: [new Paragraph({ children: [new TextRun({ text: "Surveyor:", bold: true })] })]
-            }),
-            new TableCell({
-              children: [new Paragraph({ children: [new TextRun({ text: survey.surveyor })] })]
-            })
-          ]
-        }),
-        new TableRow({
-          children: [
-            new TableCell({
-              children: [new Paragraph({ children: [new TextRun({ text: "Date:", bold: true })] })]
-            }),
-            new TableCell({
-              children: [new Paragraph({ children: [new TextRun({ text: new Date(survey.date).toLocaleDateString() })] })]
-            })
-          ]
-        }),
-        new TableRow({
-          children: [
-            new TableCell({
-              children: [new Paragraph({ children: [new TextRun({ text: "Client Name:", bold: true })] })]
-            }),
-            new TableCell({
-              children: [new Paragraph({ children: [new TextRun({ text: survey.clientName })] })]
-            })
-          ]
-        }),
-        new TableRow({
-          children: [
-            new TableCell({
-              children: [new Paragraph({ children: [new TextRun({ text: "Document Type:", bold: true })] })]
-            }),
-            new TableCell({
-              children: [new Paragraph({ children: [new TextRun({ text: survey.documentType })] })]
-            })
-          ]
-        })
-      ]
-    })
-  ];
-
-  // Add items section
-  children.push(
     new Paragraph({
       children: [
         new TextRun({
-          text: "ASBESTOS ITEMS REGISTER",
+          text: `Client Name: ${survey.clientName}`,
+          size: 20
+        })
+      ],
+      spacing: { after: 100 }
+    }),
+
+    new Paragraph({
+      children: [
+        new TextRun({
+          text: `Site Name: ${survey.siteName}`,
+          size: 20
+        })
+      ],
+      spacing: { after: 100 }
+    }),
+
+    new Paragraph({
+      children: [
+        new TextRun({
+          text: `Surveyor: ${survey.surveyor}`,
+          size: 20
+        })
+      ],
+      spacing: { after: 100 }
+    }),
+
+    new Paragraph({
+      children: [
+        new TextRun({
+          text: `Date: ${new Date(survey.date).toLocaleDateString()}`,
+          size: 20
+        })
+      ],
+      spacing: { after: 400 }
+    }),
+
+    // Report Content Introduction
+    new Paragraph({
+      children: [
+        new TextRun({
+          text: "This report details the location and condition of asbestos-containing materials identified during the survey.",
+          size: 22
+        })
+      ],
+      spacing: { after: 300 }
+    }),
+
+    // Asbestos Items Header
+    new Paragraph({
+      children: [
+        new TextRun({
+          text: "ASBESTOS ITEMS",
           bold: true,
-          size: 22,
+          size: 24,
           color: "FFFFFF"
         })
       ],
-      heading: HeadingLevel.HEADING_2,
-      spacing: { before: 600, after: 200 },
-      shading: { fill: "0066CC" }
+      heading: HeadingLevel.HEADING_1,
+      spacing: { before: 600, after: 300 },
+      shading: { fill: "0066CC" },
+      alignment: AlignmentType.CENTER
     })
-  );
+  ];
 
-  if (surveyItems.length === 0) {
+  // Add items by building area groups
+  let sectionNumber = 5;
+  Object.values(groupedItems).forEach((group, groupIndex) => {
+    const currentSection = sectionNumber + groupIndex;
+    
+    // Section header
     children.push(
       new Paragraph({
         children: [
           new TextRun({
-            text: "No asbestos-containing items recorded for this survey.",
-            italics: true
+            text: `${currentSection}. ${group.buildingArea} - ${group.externalInternal}`,
+            bold: true,
+            size: 20
           })
         ],
-        spacing: { after: 300 }
+        heading: HeadingLevel.HEADING_2,
+        spacing: { before: 400, after: 200 }
       })
     );
-  } else {
-    // Items table
-    const itemsTable = new Table({
-      width: { size: 100, type: WidthType.PERCENTAGE },
-      borders: {
-        top: { style: BorderStyle.SINGLE, size: 1 },
-        bottom: { style: BorderStyle.SINGLE, size: 1 },
-        left: { style: BorderStyle.SINGLE, size: 1 },
-        right: { style: BorderStyle.SINGLE, size: 1 },
-        insideHorizontal: { style: BorderStyle.SINGLE, size: 1 },
-        insideVertical: { style: BorderStyle.SINGLE, size: 1 }
-      },
-      rows: [
-        // Header row
-        new TableRow({
+
+    // Add each item in the group
+    group.items.forEach((item, itemIndex) => {
+      const itemNumber = `${currentSection}.${itemIndex + 1}`;
+      
+      children.push(
+        new Paragraph({
           children: [
-            new TableCell({
-              children: [new Paragraph({ children: [new TextRun({ text: "Ref #", bold: true })] })],
-              width: { size: 8, type: WidthType.PERCENTAGE },
-              shading: { fill: "F1F1F1" }
-            }),
-            new TableCell({
-              children: [new Paragraph({ children: [new TextRun({ text: "Building Area", bold: true })] })],
-              width: { size: 12, type: WidthType.PERCENTAGE },
-              shading: { fill: "F1F1F1" }
-            }),
-            new TableCell({
-              children: [new Paragraph({ children: [new TextRun({ text: "Location", bold: true })] })],
-              width: { size: 20, type: WidthType.PERCENTAGE },
-              shading: { fill: "F1F1F1" }
-            }),
-            new TableCell({
-              children: [new Paragraph({ children: [new TextRun({ text: "Item Use", bold: true })] })],
-              width: { size: 15, type: WidthType.PERCENTAGE },
-              shading: { fill: "F1F1F1" }
-            }),
-            new TableCell({
-              children: [new Paragraph({ children: [new TextRun({ text: "Material", bold: true })] })],
-              width: { size: 15, type: WidthType.PERCENTAGE },
-              shading: { fill: "F1F1F1" }
-            }),
-            new TableCell({
-              children: [new Paragraph({ children: [new TextRun({ text: "Risk", bold: true })] })],
-              width: { size: 8, type: WidthType.PERCENTAGE },
-              shading: { fill: "F1F1F1" }
-            }),
-            new TableCell({
-              children: [new Paragraph({ children: [new TextRun({ text: "Recommendation", bold: true })] })],
-              width: { size: 12, type: WidthType.PERCENTAGE },
-              shading: { fill: "F1F1F1" }
-            }),
-            new TableCell({
-              children: [new Paragraph({ children: [new TextRun({ text: "Notes", bold: true })] })],
-              width: { size: 10, type: WidthType.PERCENTAGE },
-              shading: { fill: "F1F1F1" }
+            new TextRun({
+              text: `${itemNumber}. ${item.location1}, ${item.location2}, ${item.itemUse}`,
+              bold: true,
+              size: 16
             })
-          ]
-        }),
-        // Data rows
-        ...surveyItems.map(item => {
-          const getRiskColor = (risk: string) => {
-            switch (risk) {
-              case 'High': return "DC3545";
-              case 'Medium': return "FFC107";
-              case 'Low': return "28A745";
-              default: return "000000";
-            }
-          };
-
-          return new TableRow({
-            children: [
-              new TableCell({
-                children: [new Paragraph({ children: [new TextRun({ text: item.referenceNumber })] })]
-              }),
-              new TableCell({
-                children: [new Paragraph({ children: [new TextRun({ text: item.buildingArea })] })]
-              }),
-              new TableCell({
-                children: [new Paragraph({ children: [new TextRun({ text: `${item.location1} - ${item.location2}` })] })]
-              }),
-              new TableCell({
-                children: [new Paragraph({ children: [new TextRun({ text: item.itemUse })] })]
-              }),
-              new TableCell({
-                children: [new Paragraph({ children: [new TextRun({ text: item.materialType })] })]
-              }),
-              new TableCell({
-                children: [new Paragraph({ 
-                  children: [new TextRun({ 
-                    text: item.riskLevel, 
-                    bold: true,
-                    color: getRiskColor(item.riskLevel)
-                  })] 
-                })]
-              }),
-              new TableCell({
-                children: [new Paragraph({ children: [new TextRun({ text: item.recommendation })] })]
-              }),
-              new TableCell({
-                children: [new Paragraph({ children: [new TextRun({ text: item.notes || "-" })] })]
-              })
-            ]
-          });
+          ],
+          heading: HeadingLevel.HEADING_3,
+          spacing: { before: 300, after: 150 }
         })
-      ]
+      );
+
+      // Findings paragraph
+      const dimensionsText = item.quantity && item.unit ? 
+        `Approx. ${item.quantity} ${item.unit}${item.length ? ` (${item.length}m x ${item.width || 'varying'}m)` : ''}.` : 
+        'Dimensions to be determined.';
+      
+      const asbestosTypesText = item.asbestosTypes && item.asbestosTypes.length > 0 ? 
+        item.asbestosTypes.join(', ') : 'Type to be confirmed';
+
+      const findingsText = `The ${item.materialType} contains ${asbestosTypesText} asbestos. ${item.painted ? 'Painted.' : 'Not painted.'} ${item.condition} condition. ${item.friable ? 'Friable.' : 'Non friable.'} ${dimensionsText} ${item.sampleReference || 'Sample reference pending.'}. ${item.warningLabelsVisible ? 'Warning labels visible.' : 'Warning labels not visible.'} ${item.accessibility}.`;
+
+      children.push(
+        new Paragraph({
+          children: [
+            new TextRun({
+              text: "Findings: ",
+              bold: true
+            }),
+            new TextRun({
+              text: findingsText
+            })
+          ],
+          spacing: { after: 100 }
+        })
+      );
+
+      // Risk assessment
+      children.push(
+        new Paragraph({
+          children: [
+            new TextRun({
+              text: "Risk assessment: ",
+              bold: true
+            }),
+            new TextRun({
+              text: `This asbestos-containing material has a `,
+            }),
+            new TextRun({
+              text: `${item.riskLevel.toUpperCase()}`,
+              bold: true,
+              color: item.riskLevel === 'High' ? 'DC3545' : item.riskLevel === 'Medium' ? 'FF8C00' : '28A745'
+            }),
+            new TextRun({
+              text: ` risk.`
+            })
+          ],
+          spacing: { after: 100 }
+        })
+      );
+
+      // Recommended action
+      children.push(
+        new Paragraph({
+          children: [
+            new TextRun({
+              text: "Recommended action: ",
+              bold: true
+            }),
+            new TextRun({
+              text: item.recommendation
+            })
+          ],
+          spacing: { after: 100 }
+        })
+      );
+
+      // Action taken
+      children.push(
+        new Paragraph({
+          children: [
+            new TextRun({
+              text: "Action taken: ",
+              bold: true
+            }),
+            new TextRun({
+              text: `Identified during ${new Date(survey.date).toLocaleDateString()} survey by AX4.`
+            })
+          ],
+          spacing: { after: 100 }
+        })
+      );
+
+      // Photos reference
+      if (item.photos && item.photos.length > 0) {
+        children.push(
+          new Paragraph({
+            children: [
+              new TextRun({
+                text: "Photos: ",
+                bold: true
+              }),
+              new TextRun({
+                text: `${item.photos.length} photo(s) captured (Reference: ${item.referenceNumber})`
+              })
+            ],
+            spacing: { after: 200 }
+          })
+        );
+      }
+
+      // Notes if any
+      if (item.notes) {
+        children.push(
+          new Paragraph({
+            children: [
+              new TextRun({
+                text: "Notes: ",
+                bold: true
+              }),
+              new TextRun({
+                text: item.notes
+              })
+            ],
+            spacing: { after: 200 }
+          })
+        );
+      }
     });
+  });
 
-    children.push(itemsTable);
-    children.push(new Paragraph({ text: "", spacing: { after: 400 } })); // Spacing after table
-  }
-
-  // Footer section
+  // Compliance and footer
   children.push(
     new Paragraph({
       children: [
         new TextRun({
-          text: "COMPLIANCE STATEMENT",
+          text: "COMPLIANCE",
           bold: true,
-          size: 18
+          size: 20
         })
       ],
       heading: HeadingLevel.HEADING_2,
       spacing: { before: 600, after: 200 }
     }),
-    
+
     new Paragraph({
       children: [
         new TextRun({
-          text: "This survey has been conducted in accordance with:"
+          text: "This report has been prepared in accordance with:"
         })
       ],
       spacing: { after: 100 }
     }),
-    
+
     new Paragraph({
       children: [
         new TextRun({
@@ -307,11 +314,11 @@ export const generateDOCXReport = async (surveyData: SurveyData): Promise<void> 
       ],
       spacing: { after: 100 }
     }),
-    
+
     new Paragraph({
       children: [
         new TextRun({
-          text: "• AS 1319–1994"
+          text: "• AS 1319–1994 - Safety signs for the occupational environment"
         })
       ],
       spacing: { after: 300 }
@@ -322,46 +329,34 @@ export const generateDOCXReport = async (surveyData: SurveyData): Promise<void> 
         new TextRun({
           text: "Generated by AX4 Asbestos Survey Tool",
           italics: true,
-          size: 20
+          size: 18
         })
       ],
       alignment: AlignmentType.CENTER,
       spacing: { before: 400, after: 100 }
     }),
-    
+
     new Paragraph({
       children: [
         new TextRun({
           text: "Contact: admin@ax4.com.au",
           italics: true,
-          size: 20
+          size: 16
         })
       ],
       alignment: AlignmentType.CENTER,
-      spacing: { after: 100 }
-    }),
-    
-    new Paragraph({
-      children: [
-        new TextRun({
-          text: `Report generated on ${new Date().toLocaleString()}`,
-          italics: true,
-          size: 18,
-          color: "666666"
-        })
-      ],
-      alignment: AlignmentType.CENTER
+      spacing: { after: 200 }
     })
   );
 
-  // Create the document
+  // Create and save document
   const doc = new Document({
     sections: [{
       children: children
     }]
   });
 
-  // Generate and save the document
   const buffer = await Packer.toBlob(doc);
-  saveAs(buffer, `AX4-Report-${survey.jobId}.docx`);
+  const fileName = `${survey.jobId}-${survey.documentType}-${new Date().toISOString().split('T')[0]}.docx`;
+  saveAs(buffer, fileName);
 };
