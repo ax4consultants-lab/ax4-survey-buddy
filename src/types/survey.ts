@@ -27,7 +27,7 @@ export interface Item {
   photoReference?: string;
   // Hierarchical location structure
   buildingArea: string; // Main Residence/Main Building/Granny Flat/etc
-  externalInternal: 'External' | 'Internal' | '';
+  externalInternal: 'External' | 'Internal' | 'Not Specified' | '';
   location1: string; // Elevations if external, Sections if Internal
   location2: string; // Rooms, and specific area
   itemUse: string; // cladding, lining, splash-back, etc

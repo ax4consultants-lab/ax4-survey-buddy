@@ -53,7 +53,7 @@ export default function AddItem() {
   
   const [formData, setFormData] = useState({
     buildingArea: '',
-    externalInternal: '' as Item['externalInternal'],
+    externalInternal: 'Not Specified' as Item['externalInternal'],
     location1: '',
     location2: '',
     itemUse: '',
@@ -108,7 +108,7 @@ export default function AddItem() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    const requiredFields = ['buildingArea', 'externalInternal', 'location1', 'location2', 'itemUse', 'materialType', 'condition', 'accessibility', 'recommendation'];
+    const requiredFields = ['buildingArea', 'location1', 'location2', 'itemUse', 'materialType', 'condition', 'accessibility', 'recommendation'];
     const missingFields = requiredFields.filter(field => !formData[field as keyof typeof formData]);
     
     if (missingFields.length > 0) {
@@ -154,7 +154,7 @@ export default function AddItem() {
     // Reset form for next item
     setFormData({
       buildingArea: '',
-      externalInternal: '',
+      externalInternal: 'Not Specified',
       location1: '',
       location2: '',
       itemUse: '',
@@ -241,14 +241,15 @@ export default function AddItem() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="externalInternal">External or Internal *</Label>
+                  <Label htmlFor="externalInternal">External or Internal</Label>
                   <Select value={formData.externalInternal} onValueChange={(value) => handleInputChange('externalInternal', value)}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select location type" />
+                      <SelectValue placeholder="Select location type (optional)" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="External">External</SelectItem>
                       <SelectItem value="Internal">Internal</SelectItem>
+                      <SelectItem value="Not Specified">Not Specified</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
