@@ -58,6 +58,8 @@ export default function AddItem() {
     location2: '',
     itemUse: '',
     materialType: '',
+    sampleStatus: 'Not Sampled' as Item['sampleStatus'],
+    sampleReference: '',
     painted: null as boolean | null,
     friable: null as boolean | null,
     condition: '' as Item['condition'],
@@ -108,7 +110,7 @@ export default function AddItem() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    const requiredFields = ['buildingArea', 'location1', 'location2', 'itemUse', 'materialType', 'condition', 'accessibility', 'recommendation'];
+    const requiredFields = ['buildingArea', 'location1', 'location2', 'itemUse', 'materialType', 'sampleStatus', 'condition', 'accessibility', 'recommendation'];
     const missingFields = requiredFields.filter(field => !formData[field as keyof typeof formData]);
     
     if (missingFields.length > 0) {
@@ -132,6 +134,8 @@ export default function AddItem() {
       location2: formData.location2,
       itemUse: formData.itemUse,
       materialType: formData.materialType,
+      sampleStatus: formData.sampleStatus,
+      sampleReference: formData.sampleReference || undefined,
       painted: formData.painted,
       friable: formData.friable,
       condition: formData.condition,
@@ -159,6 +163,8 @@ export default function AddItem() {
       location2: '',
       itemUse: '',
       materialType: '',
+      sampleStatus: 'Not Sampled',
+      sampleReference: '',
       painted: null,
       friable: null,
       condition: '',
@@ -302,6 +308,37 @@ export default function AddItem() {
                     ))}
                   </SelectContent>
                 </Select>
+              </div>
+
+              {/* Sample Status */}
+              <div className="space-y-4 border p-4 rounded-lg">
+                <h3 className="font-medium text-sm text-muted-foreground">Sample Information</h3>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="sampleStatus">Sample Status *</Label>
+                  <Select value={formData.sampleStatus} onValueChange={(value) => handleInputChange('sampleStatus', value)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select sample status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Sample">Sample</SelectItem>
+                      <SelectItem value="Similar to Sample">Similar to Sample</SelectItem>
+                      <SelectItem value="Not Sampled">Not Sampled</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {(formData.sampleStatus === 'Sample' || formData.sampleStatus === 'Similar to Sample') && (
+                  <div className="space-y-2">
+                    <Label htmlFor="sampleReference">Sample Reference (e.g., Sample 1, Sample 2)</Label>
+                    <Input
+                      id="sampleReference"
+                      value={formData.sampleReference}
+                      onChange={(e) => handleInputChange('sampleReference', e.target.value)}
+                      placeholder="e.g., Sample 1, Sample 2"
+                    />
+                  </div>
+                )}
               </div>
 
               {/* Condition Assessment */}

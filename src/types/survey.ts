@@ -32,6 +32,9 @@ export interface Item {
   location2: string; // Rooms, and specific area
   itemUse: string; // cladding, lining, splash-back, etc
   materialType: string;
+  // Sample tracking
+  sampleStatus: 'Sample' | 'Similar to Sample' | 'Not Sampled';
+  sampleReference?: string; // e.g., "Sample 1", "Sample 2"
   // Condition assessment
   painted: boolean | null;
   friable: boolean | null;
