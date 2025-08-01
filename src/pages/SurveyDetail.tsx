@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { RiskBadge } from "@/components/RiskBadge";
-import { Plus, Building2, Package, FileText, Download } from "lucide-react";
+import { Plus, Building2, Package, FileText, Download, Edit } from "lucide-react";
 import { getSurveyById, getRoomsBySurveyId, getItemsBySurveyId, getSurveyData } from "@/utils/storage";
 import { generateDOCXReport } from "@/utils/docx";
 import { Survey, Room, Item } from "@/types/survey";
@@ -188,6 +188,7 @@ export default function SurveyDetail() {
                         <th className="text-left p-2 font-medium">Risk</th>
                         <th className="text-left p-2 font-medium">Recommendation</th>
                         <th className="text-left p-2 font-medium">Photos</th>
+                        <th className="text-left p-2 font-medium">Actions</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -209,6 +210,15 @@ export default function SurveyDetail() {
                             {item.recommendation}
                           </td>
                           <td className="p-2">{item.photos.length}</td>
+                          <td className="p-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => navigate(`/survey/${surveyId}/edit-item/${item.itemId}`)}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                          </td>
                         </tr>
                       ))}
                     </tbody>
