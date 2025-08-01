@@ -1,0 +1,237 @@
+import { useState, useEffect } from "react";
+import { Navigation } from "@/components/Navigation";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { RiskBadge } from "@/components/RiskBadge";
+import { Plus, FileText, Download, MapPin, Clock, Building2 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { getSurveys, getItemsBySurveyId, getSurveyData } from "@/utils/storage";
+import { generatePDFReport } from "@/utils/pdf";
+import { Survey } from "@/types/survey";
+import { useToast } from "@/hooks/use-toast";
+
+export default function Dashboard() {
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const [surveys, setSurveys] = useState<Survey[]>([]);
+
+  useEffect(() => {
+    setSurveys(getSurveys());
+  }, []);
+
+  const handleGenerateReport = async (surveyId: string) => {
+    try {
+      const surveyData = getSurveyData(surveyId);
+      if (!surveyData) {
+        toast({
+          title: "Error",
+          description: "Survey data not found",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      await generatePDFReport(surveyData);
+      toast({
+        title: "Success",
+        description: "PDF report generated successfully",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to generate PDF report",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const getSurveyStats = (surveyId: string) => {
+    const items = getItemsBySurveyId(surveyId);
+    const riskCounts = items.reduce((acc, item) => {
+      acc[item.riskLevel] = (acc[item.riskLevel] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+    
+    return { totalItems: items.length, riskCounts };
+  };
+
+  return (
+    <div className="min-h-screen bg-background">
+      <Navigation 
+        title="AX4 Survey Tool" 
+        actions={
+          <Button 
+            onClick={() => navigate('/new-survey')}
+            variant="professional"
+            size="sm"
+          >
+            <Plus className="h-4 w-4" />
+            New Survey
+          </Button>
+        }
+      />
+      
+      <div className="container mx-auto p-4 space-y-6">
+        {/* Header Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center gap-3">
+                <Building2 className="h-8 w-8 text-primary" />
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Total Surveys</p>
+                  <p className="text-2xl font-bold">{surveys.length}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center gap-3">
+                <FileText className="h-8 w-8 text-primary" />
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Active Surveys</p>
+                  <p className="text-2xl font-bold">{surveys.filter(s => new Date(s.date).toDateString() === new Date().toDateString()).length}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center gap-3">
+                <Download className="h-8 w-8 text-primary" />
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Reports Ready</p>
+                  <p className="text-2xl font-bold">{surveys.length}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Surveys List */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-semibold">Recent Surveys</h2>
+            {surveys.length === 0 && (
+              <Button 
+                onClick={() => navigate('/new-survey')}
+                variant="outline"
+                size="sm"
+              >
+                <Plus className="h-4 w-4" />
+                Start Your First Survey
+              </Button>
+            )}
+          </div>
+          
+          {surveys.length === 0 ? (
+            <Card>
+              <CardContent className="p-8 text-center">
+                <Building2 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-lg font-medium mb-2">No surveys yet</h3>
+                <p className="text-muted-foreground mb-4">
+                  Start your first asbestos survey to begin building professional reports.
+                </p>
+                <Button 
+                  onClick={() => navigate('/new-survey')}
+                  variant="professional"
+                >
+                  <Plus className="h-4 w-4" />
+                  Create New Survey
+                </Button>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid gap-4">
+              {surveys.map((survey) => {
+                const { totalItems, riskCounts } = getSurveyStats(survey.surveyId);
+                
+                return (
+                  <Card key={survey.surveyId} className="hover:shadow-md transition-shadow">
+                    <CardHeader className="pb-3">
+                      <div className="flex items-start justify-between">
+                        <div className="space-y-1">
+                          <CardTitle className="text-lg">{survey.siteName}</CardTitle>
+                          <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                            <span className="font-medium">Job ID: {survey.jobId}</span>
+                            <Badge variant="outline">{survey.surveyType}</Badge>
+                          </div>
+                        </div>
+                        <Button
+                          onClick={() => handleGenerateReport(survey.surveyId)}
+                          variant="outline"
+                          size="sm"
+                        >
+                          <Download className="h-4 w-4" />
+                          PDF
+                        </Button>
+                      </div>
+                    </CardHeader>
+                    
+                    <CardContent>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2 text-sm">
+                            <Clock className="h-4 w-4 text-muted-foreground" />
+                            <span>{new Date(survey.date).toLocaleDateString()}</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-sm">
+                            <span className="font-medium">Surveyor:</span>
+                            <span>{survey.surveyor}</span>
+                          </div>
+                          {survey.gpsCoordinates && (
+                            <div className="flex items-center gap-2 text-sm">
+                              <MapPin className="h-4 w-4 text-muted-foreground" />
+                              <span className="truncate">{survey.gpsCoordinates}</span>
+                            </div>
+                          )}
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <div className="text-sm">
+                            <span className="font-medium">Items Recorded: </span>
+                            <span>{totalItems}</span>
+                          </div>
+                          {totalItems > 0 && (
+                            <div className="flex gap-2 flex-wrap">
+                              {riskCounts.High && <RiskBadge risk="High" />}
+                              {riskCounts.Medium && <RiskBadge risk="Medium" />}
+                              {riskCounts.Low && <RiskBadge risk="Low" />}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      
+                      <div className="flex gap-2 mt-4">
+                        <Button
+                          onClick={() => navigate(`/survey/${survey.surveyId}`)}
+                          variant="professional"
+                          size="sm"
+                          className="flex-1"
+                        >
+                          Continue Survey
+                        </Button>
+                        <Button
+                          onClick={() => navigate(`/survey/${survey.surveyId}/preview`)}
+                          variant="outline"
+                          size="sm"
+                        >
+                          <FileText className="h-4 w-4" />
+                          Preview
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}

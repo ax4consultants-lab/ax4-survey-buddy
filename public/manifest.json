@@ -1,0 +1,21 @@
+{
+  "name": "AX4 Asbestos Survey Tool",
+  "short_name": "AX4 Survey",
+  "description": "Professional mobile-first asbestos survey tool for efficient onsite data collection and PDF report generation",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#0066cc",
+  "orientation": "portrait-primary",
+  "categories": ["business", "productivity", "utilities"],
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "48x48",
+      "type": "image/x-icon",
+      "purpose": "any maskable"
+    }
+  ],
+  "scope": "/",
+  "lang": "en-AU"
+}
