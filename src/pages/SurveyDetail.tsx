@@ -91,12 +91,12 @@ export default function SurveyDetail() {
               DOCX
             </Button>
             <Button 
-              onClick={() => navigate(`/survey/${surveyId}/add-room`)}
+              onClick={() => navigate(`/survey/${surveyId}/add-item`)}
               variant="professional"
               size="sm"
             >
               <Plus className="h-4 w-4" />
-              Add Room
+              Add Item
             </Button>
           </div>
         }
@@ -136,32 +136,30 @@ export default function SurveyDetail() {
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-semibold">Add First Item</h2>
-            {rooms.length === 0 && (
-              <Button 
-                onClick={() => navigate(`/survey/${surveyId}/add-room`)}
-                variant="outline"
-                size="sm"
-              >
-                <Plus className="h-4 w-4" />
-                Add First Room
-              </Button>
-            )}
+            <Button 
+              onClick={() => navigate(`/survey/${surveyId}/add-item`)}
+              variant="outline"
+              size="sm"
+            >
+              <Plus className="h-4 w-4" />
+              Add First Item
+            </Button>
           </div>
           
           {rooms.length === 0 ? (
             <Card>
               <CardContent className="p-8 text-center">
-                <Building2 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-lg font-medium mb-2">No rooms added yet</h3>
+                <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-lg font-medium mb-2">No items added yet</h3>
                 <p className="text-muted-foreground mb-4">
-                  Start by adding rooms or areas to organize your survey data.
+                  Start by adding your first item with location, material type, condition and recommended actions.
                 </p>
                 <Button 
-                  onClick={() => navigate(`/survey/${surveyId}/add-room`)}
+                  onClick={() => navigate(`/survey/${surveyId}/add-item`)}
                   variant="professional"
                 >
                   <Plus className="h-4 w-4" />
-                  Add First Room
+                  Add First Item
                 </Button>
               </CardContent>
             </Card>
