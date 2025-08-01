@@ -57,37 +57,33 @@ export default function AddItem() {
   const [photos, setPhotos] = useState<string[]>([]);
   const [isCapturing, setIsCapturing] = useState(false);
   const [photoReferences, setPhotoReferences] = useState<string[]>([]);
-  const draftKey = `add-item-${surveyId}`;
   
-  const form = useForm<ItemFormData>({
-    resolver: zodResolver(itemSchema),
-    defaultValues: {
-      buildingArea: '',
-      externalInternal: 'Not Specified',
-      location1: '',
-      location2: '',
-      itemUse: '',
-      materialType: '',
-      sampleStatus: 'Not Sampled',
-      sampleReference: '',
-      quantity: '',
-      length: '',
-      width: '',
-      diameter: '',
-      thickness: '',
-      painted: null,
-      friable: null,
-      condition: 'Good',
-      accessibility: 'Accessible',
-      warningLabelsVisible: null,
-      riskLevel: 'Low',
-      recommendation: '',
-      notes: '',
-    }
+  const [formData, setFormData] = useState({
+    buildingArea: '',
+    externalInternal: 'Not Specified' as Item['externalInternal'],
+    location1: '',
+    location2: '',
+    itemUse: '',
+    materialType: '',
+    sampleStatus: 'Not Sampled' as Item['sampleStatus'],
+    sampleReference: '',
+    quantity: '',
+    unit: '' as Item['unit'],
+    length: '',
+    width: '',
+    diameter: '',
+    thickness: '',
+    painted: null as boolean | null,
+    friable: null as boolean | null,
+    condition: '' as Item['condition'],
+    accessibility: '' as Item['accessibility'],
+    warningLabelsVisible: null as boolean | null,
+    riskLevel: 'Low' as Item['riskLevel'],
+    recommendation: '',
+    notes: '',
   });
 
-  const { watch } = form;
-  const formValues = watch();
+  const draftKey = `add-item-${surveyId}`;
 
   useEffect(() => {
     if (!surveyId) return;
@@ -102,24 +98,28 @@ export default function AddItem() {
     
     const draft = loadDraft(draftKey);
     if (draft) {
-      form.reset(draft);
+      setFormData(draft);
       toast({
         title: "Draft restored",
         description: "Your previous item data has been restored",
       });
     }
-  }, [surveyId, form, toast, draftKey]);
+  }, [surveyId, toast, draftKey]);
 
   // Auto-save draft
   useEffect(() => {
     const timeoutId = setTimeout(() => {
-      if (Object.values(formValues).some(value => value !== '' && value !== null)) {
-        saveDraft(draftKey, formValues, surveyId);
+      if (Object.values(formData).some(value => value !== '' && value !== null)) {
+        saveDraft(draftKey, formData, surveyId);
       }
     }, 2000);
 
     return () => clearTimeout(timeoutId);
-  }, [formValues, draftKey, surveyId]);
+  }, [formData, draftKey, surveyId]);
+
+  const handleInputChange = (field: string, value: string | number | boolean | null | string[]) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
 
   const handleTakePhoto = async () => {
     setIsCapturing(true);
@@ -199,43 +199,57 @@ export default function AddItem() {
     setPhotoReferences(prev => prev.filter((_, i) => i !== index));
   };
 
-  const onSubmit = (data: ItemFormData) => {
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    const requiredFields = ['buildingArea', 'location1', 'location2', 'itemUse', 'materialType', 'condition', 'accessibility', 'riskLevel', 'recommendation'];
+    const missingFields = requiredFields.filter(field => !formData[field as keyof typeof formData]);
+    
+    if (missingFields.length > 0) {
+      toast({
+        title: "Missing information",
+        description: "Please fill in all required fields",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (!surveyId) return;
 
     const item: Item = {
       itemId: generateId(),
       surveyId: surveyId!,
-      referenceNumber: generateId(), // Auto-generate reference
-      buildingArea: data.buildingArea,
-      externalInternal: data.externalInternal,
-      location1: data.location1,
-      location2: data.location2,
-      itemUse: data.itemUse,
-      materialType: data.materialType,
+      referenceNumber: generateId(),
+      buildingArea: formData.buildingArea,
+      externalInternal: formData.externalInternal,
+      location1: formData.location1,
+      location2: formData.location2,
+      itemUse: formData.itemUse,
+      materialType: formData.materialType,
       asbestosTypes: [],
-      sampleStatus: data.sampleStatus,
-      sampleReference: data.sampleReference || undefined,
-      quantity: data.quantity ? parseFloat(data.quantity) : undefined,
-      unit: data.unit || undefined,
-      length: data.length ? parseFloat(data.length) : undefined,
-      width: data.width ? parseFloat(data.width) : undefined,
-      diameter: data.diameter ? parseFloat(data.diameter) : undefined,
-      thickness: data.thickness ? parseFloat(data.thickness) : undefined,
-      painted: data.painted,
-      friable: data.friable,
-      condition: data.condition,
-      accessibility: data.accessibility,
-      warningLabelsVisible: data.warningLabelsVisible,
-      riskLevel: data.riskLevel,
-      recommendation: data.recommendation,
-      notes: data.notes || undefined,
+      sampleStatus: formData.sampleStatus,
+      sampleReference: formData.sampleReference || undefined,
+      quantity: formData.quantity ? parseFloat(formData.quantity) : undefined,
+      unit: formData.unit || undefined,
+      length: formData.length ? parseFloat(formData.length) : undefined,
+      width: formData.width ? parseFloat(formData.width) : undefined,
+      diameter: formData.diameter ? parseFloat(formData.diameter) : undefined,
+      thickness: formData.thickness ? parseFloat(formData.thickness) : undefined,
+      painted: formData.painted,
+      friable: formData.friable,
+      condition: formData.condition,
+      accessibility: formData.accessibility,
+      warningLabelsVisible: formData.warningLabelsVisible,
+      riskLevel: formData.riskLevel,
+      recommendation: formData.recommendation,
+      notes: formData.notes || undefined,
       photos,
       photoReferences,
       createdAt: new Date().toISOString(),
     };
 
     saveItem(item);
-    removeDraft(draftKey); // Clear draft after successful save
+    removeDraft(draftKey);
     
     toast({
       title: "Item added",
@@ -243,7 +257,30 @@ export default function AddItem() {
     });
     
     // Reset form for next item
-    form.reset();
+    setFormData({
+      buildingArea: '',
+      externalInternal: 'Not Specified',
+      location1: '',
+      location2: '',
+      itemUse: '',
+      materialType: '',
+      sampleStatus: 'Not Sampled',
+      sampleReference: '',
+      quantity: '',
+      unit: '',
+      length: '',
+      width: '',
+      diameter: '',
+      thickness: '',
+      painted: null,
+      friable: null,
+      condition: '',
+      accessibility: '',
+      warningLabelsVisible: null,
+      riskLevel: 'Low',
+      recommendation: '',
+      notes: '',
+    });
     setPhotos([]);
     setPhotoReferences([]);
   };
@@ -301,8 +338,7 @@ export default function AddItem() {
           </CardHeader>
           
           <CardContent>
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-6">
 
               {/* Hierarchical Location Structure */}
               <div className="space-y-4 border p-4 rounded-lg">
@@ -679,8 +715,7 @@ export default function AddItem() {
                 <Save className="h-4 w-4" />
                 Save Item & Add Another
               </Button>
-              </form>
-            </Form>
+            </form>
           </CardContent>
         </Card>
       </div>
