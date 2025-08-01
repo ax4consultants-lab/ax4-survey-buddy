@@ -214,7 +214,7 @@ export default function Dashboard() {
                           Continue Survey
                         </Button>
                         <Button
-                          onClick={() => navigate(`/survey/${survey.surveyId}/preview`)}
+                          onClick={() => navigate(`/survey/${survey.surveyId}`)}
                           variant="outline"
                           size="sm"
                         >
