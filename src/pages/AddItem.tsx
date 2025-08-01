@@ -249,7 +249,6 @@ export default function AddItem() {
                     <SelectContent>
                       <SelectItem value="External">External</SelectItem>
                       <SelectItem value="Internal">Internal</SelectItem>
-                      <SelectItem value="">Empty</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
