@@ -60,6 +60,12 @@ export default function AddItem() {
     materialType: '',
     sampleStatus: 'Not Sampled' as Item['sampleStatus'],
     sampleReference: '',
+    quantity: '',
+    unit: '' as Item['unit'],
+    length: '',
+    width: '',
+    diameter: '',
+    thickness: '',
     painted: null as boolean | null,
     friable: null as boolean | null,
     condition: '' as Item['condition'],
@@ -136,6 +142,12 @@ export default function AddItem() {
       materialType: formData.materialType,
       sampleStatus: formData.sampleStatus,
       sampleReference: formData.sampleReference || undefined,
+      quantity: formData.quantity ? parseFloat(formData.quantity) : undefined,
+      unit: formData.unit || undefined,
+      length: formData.length ? parseFloat(formData.length) : undefined,
+      width: formData.width ? parseFloat(formData.width) : undefined,
+      diameter: formData.diameter ? parseFloat(formData.diameter) : undefined,
+      thickness: formData.thickness ? parseFloat(formData.thickness) : undefined,
       painted: formData.painted,
       friable: formData.friable,
       condition: formData.condition,
@@ -165,6 +177,12 @@ export default function AddItem() {
       materialType: '',
       sampleStatus: 'Not Sampled',
       sampleReference: '',
+      quantity: '',
+      unit: '',
+      length: '',
+      width: '',
+      diameter: '',
+      thickness: '',
       painted: null,
       friable: null,
       condition: '',
@@ -339,6 +357,90 @@ export default function AddItem() {
                     />
                   </div>
                 )}
+              </div>
+
+              {/* Size and Quantity Measurements */}
+              <div className="space-y-4 border p-4 rounded-lg">
+                <h3 className="font-medium text-sm text-muted-foreground">Size & Quantity</h3>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="quantity">Quantity</Label>
+                    <Input
+                      id="quantity"
+                      type="number"
+                      step="0.01"
+                      value={formData.quantity}
+                      onChange={(e) => handleInputChange('quantity', e.target.value)}
+                      placeholder="e.g., 10, 2.5"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="unit">Unit</Label>
+                    <Select value={formData.unit} onValueChange={(value) => handleInputChange('unit', value)}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select unit" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="m2">m² (square meters)</SelectItem>
+                        <SelectItem value="pieces">pieces</SelectItem>
+                        <SelectItem value="lineal meters">lineal meters</SelectItem>
+                        <SelectItem value="length">length (meters)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="length">Length (m)</Label>
+                    <Input
+                      id="length"
+                      type="number"
+                      step="0.01"
+                      value={formData.length}
+                      onChange={(e) => handleInputChange('length', e.target.value)}
+                      placeholder="e.g., 2.5"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="width">Width (m)</Label>
+                    <Input
+                      id="width"
+                      type="number"
+                      step="0.01"
+                      value={formData.width}
+                      onChange={(e) => handleInputChange('width', e.target.value)}
+                      placeholder="e.g., 1.2"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="diameter">Diameter (m)</Label>
+                    <Input
+                      id="diameter"
+                      type="number"
+                      step="0.01"
+                      value={formData.diameter}
+                      onChange={(e) => handleInputChange('diameter', e.target.value)}
+                      placeholder="e.g., 0.1"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="thickness">Thickness (mm)</Label>
+                    <Input
+                      id="thickness"
+                      type="number"
+                      step="0.1"
+                      value={formData.thickness}
+                      onChange={(e) => handleInputChange('thickness', e.target.value)}
+                      placeholder="e.g., 6.0"
+                    />
+                  </div>
+                </div>
               </div>
 
               {/* Condition Assessment */}

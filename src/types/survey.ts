@@ -35,6 +35,13 @@ export interface Item {
   // Sample tracking
   sampleStatus: 'Sample' | 'Similar to Sample' | 'Not Sampled';
   sampleReference?: string; // e.g., "Sample 1", "Sample 2"
+  // Size and quantity measurements
+  quantity?: number;
+  unit?: 'm2' | 'pieces' | 'lineal meters' | 'length' | '';
+  length?: number; // in meters
+  width?: number; // in meters
+  diameter?: number; // in meters
+  thickness?: number; // in meters/mm
   // Condition assessment
   painted: boolean | null;
   friable: boolean | null;
