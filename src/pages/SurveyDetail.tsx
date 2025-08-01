@@ -134,17 +134,17 @@ export default function SurveyDetail() {
           </CardContent>
         </Card>
 
-        {/* Rooms List */}
+        {/* Items Preview */}
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold">Add First Item</h2>
+            <h2 className="text-xl font-semibold">Survey Items</h2>
             <Button 
               onClick={() => navigate(`/survey/${surveyId}/add-item`)}
-              variant="outline"
+              variant="professional"
               size="sm"
             >
               <Plus className="h-4 w-4" />
-              Add First Item
+              Add Item
             </Button>
           </div>
           
@@ -166,59 +166,56 @@ export default function SurveyDetail() {
               </CardContent>
             </Card>
           ) : (
-            <div className="grid gap-4">
-              {rooms.map((room) => {
-                const { totalItems, riskCounts } = getRoomStats(room.roomId);
-                
-                return (
-                  <Card key={room.roomId} className="hover:shadow-md transition-shadow">
-                    <CardHeader className="pb-3">
-                      <div className="flex items-center justify-between">
-                        <CardTitle className="text-lg flex items-center gap-2">
-                          <Building2 className="h-5 w-5 text-primary" />
-                          {room.roomName}
-                        </CardTitle>
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm text-muted-foreground">
-                            {totalItems} items
-                          </span>
-                        </div>
-                      </div>
-                    </CardHeader>
-                    
-                    <CardContent>
-                      {totalItems > 0 && (
-                        <div className="flex gap-2 flex-wrap mb-4">
-                          {riskCounts.High && <RiskBadge risk="High" />}
-                          {riskCounts.Medium && <RiskBadge risk="Medium" />}
-                          {riskCounts.Low && <RiskBadge risk="Low" />}
-                        </div>
-                      )}
-                      
-                      <div className="flex gap-2">
-                        <Button
-                          onClick={() => navigate(`/survey/${surveyId}/room/${room.roomId}/add-item`)}
-                          variant="professional"
-                          size="sm"
-                          className="flex-1"
-                        >
-                          <Package className="h-4 w-4" />
-                          Add Items
-                        </Button>
-                        <Button
-                          onClick={() => navigate(`/survey/${surveyId}/room/${room.roomId}`)}
-                          variant="outline"
-                          size="sm"
-                        >
-                          <FileText className="h-4 w-4" />
-                          View Items ({totalItems})
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                );
-              })}
-            </div>
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Package className="h-5 w-5 text-primary" />
+                  Items Preview ({items.length})
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b">
+                        <th className="text-left p-2 font-medium">Building Area</th>
+                        <th className="text-left p-2 font-medium">Ext/Int</th>
+                        <th className="text-left p-2 font-medium">Location 1</th>
+                        <th className="text-left p-2 font-medium">Location 2</th>
+                        <th className="text-left p-2 font-medium">Material</th>
+                        <th className="text-left p-2 font-medium">Condition</th>
+                        <th className="text-left p-2 font-medium">Access</th>
+                        <th className="text-left p-2 font-medium">Risk</th>
+                        <th className="text-left p-2 font-medium">Recommendation</th>
+                        <th className="text-left p-2 font-medium">Photos</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {items.map((item, index) => (
+                        <tr key={item.itemId} className={index % 2 === 0 ? "bg-muted/50" : ""}>
+                          <td className="p-2">{item.buildingArea}</td>
+                          <td className="p-2">{item.externalInternal}</td>
+                          <td className="p-2">{item.location1}</td>
+                          <td className="p-2">{item.location2}</td>
+                          <td className="p-2 max-w-[150px] truncate" title={item.materialType}>
+                            {item.materialType}
+                          </td>
+                          <td className="p-2">{item.condition}</td>
+                          <td className="p-2">{item.accessibility}</td>
+                          <td className="p-2">
+                            <RiskBadge risk={item.riskLevel} />
+                          </td>
+                          <td className="p-2 max-w-[200px] truncate" title={item.recommendation}>
+                            {item.recommendation}
+                          </td>
+                          <td className="p-2">{item.photos.length}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </CardContent>
+            </Card>
           )}
         </div>
       </div>

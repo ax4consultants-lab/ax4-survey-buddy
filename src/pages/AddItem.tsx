@@ -59,7 +59,7 @@ export default function AddItem() {
     location2: '',
     itemUse: '',
     materialType: '',
-    asbestosTypes: [] as string[],
+    
     sampleStatus: 'Not Sampled' as Item['sampleStatus'],
     sampleReference: '',
     quantity: '',
@@ -131,15 +131,6 @@ export default function AddItem() {
       return;
     }
 
-    if (formData.asbestosTypes.length === 0) {
-      toast({
-        title: "Missing information",
-        description: "Please select at least one asbestos type",
-        variant: "destructive",
-      });
-      return;
-    }
-
     if (!surveyId) return;
 
     const item: Item = {
@@ -152,7 +143,7 @@ export default function AddItem() {
       location2: formData.location2,
       itemUse: formData.itemUse,
       materialType: formData.materialType,
-      asbestosTypes: formData.asbestosTypes,
+      asbestosTypes: [],
       sampleStatus: formData.sampleStatus,
       sampleReference: formData.sampleReference || undefined,
       quantity: formData.quantity ? parseFloat(formData.quantity) : undefined,
@@ -188,7 +179,6 @@ export default function AddItem() {
       location2: '',
       itemUse: '',
       materialType: '',
-      asbestosTypes: [],
       sampleStatus: 'Not Sampled',
       sampleReference: '',
       quantity: '',
@@ -343,28 +333,6 @@ export default function AddItem() {
                 </Select>
               </div>
 
-              {/* Asbestos Types */}
-              <div className="space-y-2">
-                <Label htmlFor="asbestosTypes">Asbestos Types *</Label>
-                <div className="space-y-2">
-                  {["White 'Chrysotile'", "Brown 'Amosite'", "Blue 'Crocidolite'"].map((type) => (
-                    <div key={type} className="flex items-center space-x-2">
-                      <Checkbox 
-                        id={type}
-                        checked={formData.asbestosTypes.includes(type)}
-                        onCheckedChange={(checked) => {
-                          if (checked) {
-                            handleInputChange('asbestosTypes', [...formData.asbestosTypes, type]);
-                          } else {
-                            handleInputChange('asbestosTypes', formData.asbestosTypes.filter(t => t !== type));
-                          }
-                        }}
-                      />
-                      <Label htmlFor={type} className="text-sm">{type}</Label>
-                    </div>
-                  ))}
-                </div>
-              </div>
 
               {/* Sample Status */}
               <div className="space-y-4 border p-4 rounded-lg">
