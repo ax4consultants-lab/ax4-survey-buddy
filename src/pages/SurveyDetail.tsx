@@ -135,7 +135,7 @@ export default function SurveyDetail() {
         {/* Rooms List */}
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold">Rooms & Areas</h2>
+            <h2 className="text-xl font-semibold">Add First Item</h2>
             {rooms.length === 0 && (
               <Button 
                 onClick={() => navigate(`/survey/${surveyId}/add-room`)}
