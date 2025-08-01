@@ -54,6 +54,7 @@ export interface Item {
   warningLabelsAffixed?: number;
   notes?: string;
   photos: string[];
+  photoReferences?: string[];
   createdAt: string;
 }
 

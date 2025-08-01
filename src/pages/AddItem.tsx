@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { RecommendationSelect } from "@/components/RecommendationSelect";
-import { Save, Camera, Package, Building2, AlertTriangle } from "lucide-react";
+import { Save, Camera, Package, Building2, AlertTriangle, Upload, Hash } from "lucide-react";
 import { saveItem, generateId, getRoomsBySurveyId, getSurveyById } from "@/utils/storage";
 import { capturePhoto, resizeImage } from "@/utils/camera";
 import { savePhoto } from "@/utils/storage";
@@ -51,6 +51,7 @@ export default function AddItem() {
   const [survey, setSurvey] = useState<any>(null);
   const [photos, setPhotos] = useState<string[]>([]);
   const [isCapturing, setIsCapturing] = useState(false);
+  const [photoReferences, setPhotoReferences] = useState<string[]>([]);
   
   const [formData, setFormData] = useState({
     buildingArea: '',
@@ -99,8 +100,6 @@ export default function AddItem() {
       savePhoto(photoId, resizedPhoto);
       setPhotos(prev => [...prev, photoId]);
       
-      // Photo captured and saved
-      
       toast({
         title: "Photo captured",
         description: "Photo added to item",
@@ -114,6 +113,59 @@ export default function AddItem() {
     } finally {
       setIsCapturing(false);
     }
+  };
+
+  const handleUploadPhoto = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: "Invalid file",
+        description: "Please select an image file",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      try {
+        const photoData = e.target?.result as string;
+        const resizedPhoto = await resizeImage(photoData, 1024, 0.8);
+        const photoId = generateId();
+        
+        savePhoto(photoId, resizedPhoto);
+        setPhotos(prev => [...prev, photoId]);
+        
+        toast({
+          title: "Photo uploaded",
+          description: "Photo added to item",
+        });
+      } catch (error) {
+        toast({
+          title: "Upload error",
+          description: "Failed to process uploaded photo",
+          variant: "destructive",
+        });
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleAddPhotoReference = () => {
+    const reference = prompt("Enter photo reference number:");
+    if (reference && reference.trim()) {
+      setPhotoReferences(prev => [...prev, reference.trim()]);
+      toast({
+        title: "Reference added",
+        description: "Photo reference number added",
+      });
+    }
+  };
+
+  const removePhotoReference = (index: number) => {
+    setPhotoReferences(prev => prev.filter((_, i) => i !== index));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -161,6 +213,7 @@ export default function AddItem() {
       recommendation: formData.recommendation,
       notes: formData.notes || undefined,
       photos,
+      photoReferences,
       createdAt: new Date().toISOString(),
     };
 
@@ -197,6 +250,7 @@ export default function AddItem() {
       notes: '',
     });
     setPhotos([]);
+    setPhotoReferences([]);
   };
 
   const getRiskColor = (risk: string) => {
@@ -561,25 +615,63 @@ export default function AddItem() {
               </div>
 
               {/* Photo Section */}
-              <div className="space-y-3">
-                <Label>Photos</Label>
-                <div className="flex gap-2">
+              <div className="space-y-4 border p-4 rounded-lg">
+                <h3 className="font-medium text-sm text-muted-foreground">Photos & References</h3>
+                
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
                   <Button
                     type="button"
                     variant="outline"
                     onClick={handleTakePhoto}
                     disabled={isCapturing}
-                    className="flex-1"
+                    className="flex items-center gap-2"
                   >
                     <Camera className="h-4 w-4" />
-                    {isCapturing ? 'Taking Photo...' : 'Take Photo'}
+                    {isCapturing ? 'Taking...' : 'Take Photo'}
                   </Button>
-                  {photos.length > 0 && (
-                    <Badge variant="outline" className="self-center">
-                      {photos.length} photo{photos.length > 1 ? 's' : ''}
-                    </Badge>
-                  )}
+                  
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => document.getElementById('photo-upload')?.click()}
+                    className="flex items-center gap-2"
+                  >
+                    <Upload className="h-4 w-4" />
+                    Upload Photo
+                  </Button>
+                  <input
+                    id="photo-upload"
+                    type="file"
+                    accept="image/*"
+                    onChange={handleUploadPhoto}
+                    className="hidden"
+                  />
+                  
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleAddPhotoReference}
+                    className="flex items-center gap-2"
+                  >
+                    <Hash className="h-4 w-4" />
+                    Add Reference
+                  </Button>
                 </div>
+
+                {(photos.length > 0 || photoReferences.length > 0) && (
+                  <div className="flex flex-wrap gap-2">
+                    {photos.length > 0 && (
+                      <Badge variant="outline">
+                        {photos.length} photo{photos.length > 1 ? 's' : ''}
+                      </Badge>
+                    )}
+                    {photoReferences.map((ref, index) => (
+                      <Badge key={index} variant="secondary" className="cursor-pointer" onClick={() => removePhotoReference(index)}>
+                        Ref: {ref} ×
+                      </Badge>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <Button 
