@@ -74,16 +74,15 @@ export const getItems = (): Item[] => {
   return data ? JSON.parse(data) : [];
 };
 
-export const getItemsByRoomId = (roomId: string): Item[] => {
+export const getItemsBySurveyId = (surveyId: string): Item[] => {
   const items = getItems();
-  return items.filter(i => i.roomId === roomId);
+  return items.filter(i => i.surveyId === surveyId);
 };
 
-export const getItemsBySurveyId = (surveyId: string): Item[] => {
-  const rooms = getRoomsBySurveyId(surveyId);
-  const roomIds = rooms.map(r => r.roomId);
+// Legacy function - use getItemsBySurveyId instead
+export const getItemsByRoomId = (roomId: string): Item[] => {
   const items = getItems();
-  return items.filter(i => roomIds.includes(i.roomId));
+  return items.filter(i => i.surveyId === roomId); // Treating roomId as surveyId for backwards compatibility
 };
 
 // Photo operations

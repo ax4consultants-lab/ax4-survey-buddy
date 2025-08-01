@@ -22,7 +22,7 @@ export interface Room {
 
 export interface Item {
   itemId: string;
-  roomId: string;
+  surveyId: string;
   referenceNumber: string;
   photoReference?: string;
   // Hierarchical location structure

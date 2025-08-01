@@ -124,7 +124,7 @@ export default function AddItem() {
 
     const item: Item = {
       itemId: generateId(),
-      roomId: '', // No longer using rooms
+      surveyId: surveyId!,
       referenceNumber: generateId(), // Auto-generate reference
       buildingArea: formData.buildingArea,
       externalInternal: formData.externalInternal,

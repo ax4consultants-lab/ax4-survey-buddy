@@ -5,11 +5,8 @@ import { SurveyData } from '@/types/survey';
 export const generateDOCXReport = async (surveyData: SurveyData): Promise<void> => {
   const { survey, rooms, items } = surveyData;
   
-  // Group items by room
-  const itemsByRoom = rooms.map(room => ({
-    room,
-    items: items.filter(item => item.roomId === room.roomId)
-  }));
+  // Group items by survey (no longer using rooms)
+  const surveyItems = items.filter(item => item.surveyId === survey.surveyId);
 
   // Create document sections
   const children = [
@@ -139,140 +136,145 @@ export const generateDOCXReport = async (surveyData: SurveyData): Promise<void> 
     })
   ];
 
-  // Add room sections
-  itemsByRoom.forEach(({ room, items: roomItems }) => {
-    // Room heading
+  // Add items section
+  children.push(
+    new Paragraph({
+      children: [
+        new TextRun({
+          text: "ASBESTOS ITEMS REGISTER",
+          bold: true,
+          size: 22,
+          color: "FFFFFF"
+        })
+      ],
+      heading: HeadingLevel.HEADING_2,
+      spacing: { before: 600, after: 200 },
+      shading: { fill: "0066CC" }
+    })
+  );
+
+  if (surveyItems.length === 0) {
     children.push(
       new Paragraph({
         children: [
           new TextRun({
-            text: room.roomName.toUpperCase(),
-            bold: true,
-            size: 22,
-            color: "FFFFFF"
+            text: "No asbestos-containing items recorded for this survey.",
+            italics: true
           })
         ],
-        heading: HeadingLevel.HEADING_2,
-        spacing: { before: 600, after: 200 },
-        shading: { fill: "0066CC" }
+        spacing: { after: 300 }
       })
     );
-
-    if (roomItems.length === 0) {
-      children.push(
-        new Paragraph({
+  } else {
+    // Items table
+    const itemsTable = new Table({
+      width: { size: 100, type: WidthType.PERCENTAGE },
+      borders: {
+        top: { style: BorderStyle.SINGLE, size: 1 },
+        bottom: { style: BorderStyle.SINGLE, size: 1 },
+        left: { style: BorderStyle.SINGLE, size: 1 },
+        right: { style: BorderStyle.SINGLE, size: 1 },
+        insideHorizontal: { style: BorderStyle.SINGLE, size: 1 },
+        insideVertical: { style: BorderStyle.SINGLE, size: 1 }
+      },
+      rows: [
+        // Header row
+        new TableRow({
           children: [
-            new TextRun({
-              text: "No asbestos-containing items recorded for this area.",
-              italics: true
+            new TableCell({
+              children: [new Paragraph({ children: [new TextRun({ text: "Ref #", bold: true })] })],
+              width: { size: 8, type: WidthType.PERCENTAGE },
+              shading: { fill: "F1F1F1" }
+            }),
+            new TableCell({
+              children: [new Paragraph({ children: [new TextRun({ text: "Building Area", bold: true })] })],
+              width: { size: 12, type: WidthType.PERCENTAGE },
+              shading: { fill: "F1F1F1" }
+            }),
+            new TableCell({
+              children: [new Paragraph({ children: [new TextRun({ text: "Location", bold: true })] })],
+              width: { size: 20, type: WidthType.PERCENTAGE },
+              shading: { fill: "F1F1F1" }
+            }),
+            new TableCell({
+              children: [new Paragraph({ children: [new TextRun({ text: "Item Use", bold: true })] })],
+              width: { size: 15, type: WidthType.PERCENTAGE },
+              shading: { fill: "F1F1F1" }
+            }),
+            new TableCell({
+              children: [new Paragraph({ children: [new TextRun({ text: "Material", bold: true })] })],
+              width: { size: 15, type: WidthType.PERCENTAGE },
+              shading: { fill: "F1F1F1" }
+            }),
+            new TableCell({
+              children: [new Paragraph({ children: [new TextRun({ text: "Risk", bold: true })] })],
+              width: { size: 8, type: WidthType.PERCENTAGE },
+              shading: { fill: "F1F1F1" }
+            }),
+            new TableCell({
+              children: [new Paragraph({ children: [new TextRun({ text: "Recommendation", bold: true })] })],
+              width: { size: 12, type: WidthType.PERCENTAGE },
+              shading: { fill: "F1F1F1" }
+            }),
+            new TableCell({
+              children: [new Paragraph({ children: [new TextRun({ text: "Notes", bold: true })] })],
+              width: { size: 10, type: WidthType.PERCENTAGE },
+              shading: { fill: "F1F1F1" }
             })
-          ],
-          spacing: { after: 300 }
-        })
-      );
-    } else {
-      // Items table for this room
-      const itemsTable = new Table({
-        width: { size: 100, type: WidthType.PERCENTAGE },
-        borders: {
-          top: { style: BorderStyle.SINGLE, size: 1 },
-          bottom: { style: BorderStyle.SINGLE, size: 1 },
-          left: { style: BorderStyle.SINGLE, size: 1 },
-          right: { style: BorderStyle.SINGLE, size: 1 },
-          insideHorizontal: { style: BorderStyle.SINGLE, size: 1 },
-          insideVertical: { style: BorderStyle.SINGLE, size: 1 }
-        },
-        rows: [
-          // Header row
-          new TableRow({
+          ]
+        }),
+        // Data rows
+        ...surveyItems.map(item => {
+          const getRiskColor = (risk: string) => {
+            switch (risk) {
+              case 'High': return "DC3545";
+              case 'Medium': return "FFC107";
+              case 'Low': return "28A745";
+              default: return "000000";
+            }
+          };
+
+          return new TableRow({
             children: [
               new TableCell({
-                children: [new Paragraph({ children: [new TextRun({ text: "Ref #", bold: true })] })],
-                width: { size: 10, type: WidthType.PERCENTAGE },
-                shading: { fill: "F1F1F1" }
+                children: [new Paragraph({ children: [new TextRun({ text: item.referenceNumber })] })]
               }),
               new TableCell({
-                children: [new Paragraph({ children: [new TextRun({ text: "Location", bold: true })] })],
-                width: { size: 20, type: WidthType.PERCENTAGE },
-                shading: { fill: "F1F1F1" }
+                children: [new Paragraph({ children: [new TextRun({ text: item.buildingArea })] })]
               }),
               new TableCell({
-                children: [new Paragraph({ children: [new TextRun({ text: "Item Use", bold: true })] })],
-                width: { size: 20, type: WidthType.PERCENTAGE },
-                shading: { fill: "F1F1F1" }
+                children: [new Paragraph({ children: [new TextRun({ text: `${item.location1} - ${item.location2}` })] })]
               }),
               new TableCell({
-                children: [new Paragraph({ children: [new TextRun({ text: "Material Type", bold: true })] })],
-                width: { size: 20, type: WidthType.PERCENTAGE },
-                shading: { fill: "F1F1F1" }
+                children: [new Paragraph({ children: [new TextRun({ text: item.itemUse })] })]
               }),
               new TableCell({
-                children: [new Paragraph({ children: [new TextRun({ text: "Risk Level", bold: true })] })],
-                width: { size: 10, type: WidthType.PERCENTAGE },
-                shading: { fill: "F1F1F1" }
+                children: [new Paragraph({ children: [new TextRun({ text: item.materialType })] })]
               }),
               new TableCell({
-                children: [new Paragraph({ children: [new TextRun({ text: "Recommendation", bold: true })] })],
-                width: { size: 15, type: WidthType.PERCENTAGE },
-                shading: { fill: "F1F1F1" }
+                children: [new Paragraph({ 
+                  children: [new TextRun({ 
+                    text: item.riskLevel, 
+                    bold: true,
+                    color: getRiskColor(item.riskLevel)
+                  })] 
+                })]
               }),
               new TableCell({
-                children: [new Paragraph({ children: [new TextRun({ text: "Notes", bold: true })] })],
-                width: { size: 5, type: WidthType.PERCENTAGE },
-                shading: { fill: "F1F1F1" }
+                children: [new Paragraph({ children: [new TextRun({ text: item.recommendation })] })]
+              }),
+              new TableCell({
+                children: [new Paragraph({ children: [new TextRun({ text: item.notes || "-" })] })]
               })
             ]
-          }),
-          // Data rows
-          ...roomItems.map(item => {
-            const getRiskColor = (risk: string) => {
-              switch (risk) {
-                case 'High': return "DC3545";
-                case 'Medium': return "FFC107";
-                case 'Low': return "28A745";
-                default: return "000000";
-              }
-            };
+          });
+        })
+      ]
+    });
 
-            return new TableRow({
-              children: [
-                new TableCell({
-                  children: [new Paragraph({ children: [new TextRun({ text: item.referenceNumber })] })]
-                }),
-                new TableCell({
-                  children: [new Paragraph({ children: [new TextRun({ text: `${item.buildingArea} - ${item.location1} - ${item.location2}` })] })]
-                }),
-                new TableCell({
-                  children: [new Paragraph({ children: [new TextRun({ text: item.itemUse })] })]
-                }),
-                new TableCell({
-                  children: [new Paragraph({ children: [new TextRun({ text: item.materialType })] })]
-                }),
-                new TableCell({
-                  children: [new Paragraph({ 
-                    children: [new TextRun({ 
-                      text: item.riskLevel, 
-                      bold: true,
-                      color: getRiskColor(item.riskLevel)
-                    })] 
-                  })]
-                }),
-                new TableCell({
-                  children: [new Paragraph({ children: [new TextRun({ text: item.recommendation })] })]
-                }),
-                new TableCell({
-                  children: [new Paragraph({ children: [new TextRun({ text: item.notes || "-" })] })]
-                })
-              ]
-            });
-          })
-        ]
-      });
-
-      children.push(itemsTable);
-      children.push(new Paragraph({ text: "", spacing: { after: 400 } })); // Spacing after table
-    }
-  });
+    children.push(itemsTable);
+    children.push(new Paragraph({ text: "", spacing: { after: 400 } })); // Spacing after table
+  }
 
   // Footer section
   children.push(
