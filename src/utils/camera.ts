@@ -1,55 +1,83 @@
-export const capturePhoto = (): Promise<string> => {
+// src/utils/camera.ts
+export type CaptureOptions = {
+  width?: number;
+  height?: number;
+  facingMode?: 'user' | 'environment';
+  mimeType?: 'image/jpeg' | 'image/png';
+  quality?: number; // 0..1 (jpeg only)
+};
+
+export function isMediaCaptureAvailable(): boolean {
+  return !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
+}
+
+export async function capturePhoto(opts: CaptureOptions = {}): Promise<Blob> {
+  if (!isMediaCaptureAvailable()) {
+    throw new Error('Media capture not supported on this device/browser.');
+  }
+  const {
+    facingMode = 'environment',
+    width,
+    height,
+    mimeType = 'image/jpeg',
+    quality = 0.92,
+  } = opts;
+
+  const stream = await navigator.mediaDevices.getUserMedia({
+    video: { facingMode },
+    audio: false,
+  });
+
+  try {
+    const video = document.createElement('video');
+    video.playsInline = true;
+    video.srcObject = stream;
+    await video.play();
+
+    const w = width ?? (video.videoWidth || 1280);
+    const h = height ?? (video.videoHeight || 720);
+
+    const canvas = document.createElement('canvas');
+    canvas.width = w;
+    canvas.height = h;
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) throw new Error('Canvas 2D context unavailable.');
+    ctx.drawImage(video, 0, 0, w, h);
+
+    const blob: Blob = await new Promise((resolve, reject) =>
+      canvas.toBlob(
+        (b) => (b ? resolve(b) : reject(new Error('Failed to create image blob.'))),
+        mimeType,
+        mimeType === 'image/jpeg' ? quality : undefined
+      )
+    );
+    return blob;
+  } finally {
+    stream.getTracks().forEach((t) => t.stop());
+  }
+}
+
+// Fallback for devices without camera or when user denies permission
+export function openFilePicker(accept = 'image/*'): Promise<File> {
   return new Promise((resolve, reject) => {
     const input = document.createElement('input');
     input.type = 'file';
-    input.accept = 'image/*';
-    input.capture = 'environment';
-    
-    input.onchange = (event) => {
-      const file = (event.target as HTMLInputElement).files?.[0];
-      if (!file) {
-        reject(new Error('No file selected'));
-        return;
-      }
-      
-      const reader = new FileReader();
-      reader.onload = () => {
-        resolve(reader.result as string);
-      };
-      reader.onerror = () => {
-        reject(new Error('Failed to read file'));
-      };
-      reader.readAsDataURL(file);
+    input.accept = accept;
+    input.onchange = () => {
+      const file = input.files?.[0];
+      file ? resolve(file) : reject(new Error('No file selected.'));
     };
-    
-    input.onclick = () => {
-      input.onchange = null;
-      setTimeout(() => {
-        if (!input.files?.length) {
-          reject(new Error('Photo capture cancelled'));
-        }
-      }, 100);
-    };
-    
     input.click();
   });
-};
+}
 
-export const resizeImage = (dataUrl: string, maxWidth: number = 1024, quality: number = 0.8): Promise<string> => {
-  return new Promise((resolve) => {
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d')!;
-    const img = new Image();
-    
-    img.onload = () => {
-      const ratio = Math.min(maxWidth / img.width, maxWidth / img.height);
-      canvas.width = img.width * ratio;
-      canvas.height = img.height * ratio;
-      
-      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-      resolve(canvas.toDataURL('image/jpeg', quality));
-    };
-    
-    img.src = dataUrl;
+// Handy helper for storing in local/offline state
+export function blobToDataURL(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(String(r.result));
+    r.onerror = reject;
+    r.readAsDataURL(blob);
   });
-};
+}
