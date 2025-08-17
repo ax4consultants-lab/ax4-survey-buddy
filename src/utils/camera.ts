@@ -54,7 +54,7 @@ export async function capturePhoto(opts: CaptureOptions = {}): Promise<Blob> {
     );
     return blob;
   } finally {
-    stream.getTracks().forEach((t) => t.stop());
+    stream.getTracks().forEach(track => track.stop());
   }
 }
 
@@ -79,5 +79,25 @@ export function blobToDataURL(blob: Blob): Promise<string> {
     r.onload = () => resolve(String(r.result));
     r.onerror = reject;
     r.readAsDataURL(blob);
+  });
+}
+
+// Resize image utility
+export function resizeImage(dataUrl: string, maxWidth: number = 1024, quality: number = 0.8): Promise<string> {
+  return new Promise((resolve) => {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d')!;
+    const img = new Image();
+    
+    img.onload = () => {
+      const ratio = Math.min(maxWidth / img.width, maxWidth / img.height);
+      canvas.width = img.width * ratio;
+      canvas.height = img.height * ratio;
+      
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      resolve(canvas.toDataURL('image/jpeg', quality));
+    };
+    
+    img.src = dataUrl;
   });
 }

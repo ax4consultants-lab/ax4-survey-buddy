@@ -13,7 +13,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { RecommendationSelect } from "@/components/RecommendationSelect";
 import { Save, Camera, Package, Building2, AlertTriangle, Upload, Hash } from "lucide-react";
 import { saveItem, generateId, getRoomsBySurveyId, getSurveyById } from "@/utils/storage";
-import { capturePhoto, resizeImage } from "@/utils/camera";
+import { capturePhoto, resizeImage, blobToDataURL } from "@/utils/camera";
 import { savePhoto } from "@/utils/storage";
 import { Item } from "@/types/survey";
 import { useToast } from "@/hooks/use-toast";
@@ -121,11 +121,12 @@ export default function AddItem() {
   const handleTakePhoto = async () => {
     setIsCapturing(true);
     try {
-      const photoData = await capturePhoto();
-      const resizedPhoto = await resizeImage(photoData, 1024, 0.8);
+      const blob = await capturePhoto();
+      const dataUrl = await blobToDataURL(blob);
+      const resized = await resizeImage(dataUrl, 1024, 0.8);
       const photoId = generateId();
       
-      savePhoto(photoId, resizedPhoto);
+      savePhoto(photoId, resized);
       setPhotos(prev => [...prev, photoId]);
       
       toast({
