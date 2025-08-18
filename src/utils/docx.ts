@@ -1,6 +1,7 @@
 import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, AlignmentType, BorderStyle, HeadingLevel, PageBreak } from 'docx';
 import { saveAs } from 'file-saver';
 import { SurveyData, Item } from '@/types/survey';
+import { markDocxExported } from './exportStatus';
 
 export const generateDOCXReport = async (surveyData: SurveyData, selectedItems?: Item[]): Promise<void> => {
   const { survey, items } = surveyData;
@@ -478,4 +479,7 @@ export const generateDOCXReport = async (surveyData: SurveyData, selectedItems?:
   const buffer = await Packer.toBlob(doc);
   const fileName = `${survey.jobId}-${survey.documentType}-${new Date().toISOString().split('T')[0]}.docx`;
   saveAs(buffer, fileName);
+  
+  // Mark as exported
+  markDocxExported(surveyData.survey.surveyId);
 };

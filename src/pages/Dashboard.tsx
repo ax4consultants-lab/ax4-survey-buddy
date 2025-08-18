@@ -4,12 +4,29 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { RiskBadge } from "@/components/RiskBadge";
-import { Plus, FileText, Download, MapPin, Clock, Building2, Trash2 } from "lucide-react";
+import { Plus, FileText, Download, MapPin, Clock, Building2, Trash2, History } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { getSurveys, getItemsBySurveyId, getSurveyData, deleteSurvey } from "@/utils/storage";
 import { generateDOCXReport } from "@/utils/docx";
+import { generatePDFReport } from "@/utils/pdf";
 import { Survey } from "@/types/survey";
 import { useToast } from "@/hooks/use-toast";
+import { 
+  getExportStatus, 
+  markDocxExported, 
+  markPdfExported 
+} from "@/utils/exportStatus";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -33,28 +50,55 @@ export default function Dashboard() {
       }
       
       await generateDOCXReport(surveyData);
+      setSurveys([...surveys]); // Trigger re-render to update badges
       toast({
-        title: "Success",
-        description: "DOCX report generated successfully",
+        title: "Export Complete",
+        description: "DOCX report has been downloaded",
       });
     } catch (error) {
       toast({
-        title: "Error",
+        title: "Export Failed",
         description: "Failed to generate DOCX report",
         variant: "destructive",
       });
     }
   };
 
-  const handleDeleteSurvey = (surveyId: string, siteName: string) => {
-    if (confirm(`Are you sure you want to delete the survey for "${siteName}"? This action cannot be undone.`)) {
-      deleteSurvey(surveyId);
-      setSurveys(getSurveys());
+  const handleGeneratePDFReport = async (surveyId: string) => {
+    try {
+      const surveyData = getSurveyData(surveyId);
+      if (!surveyData) {
+        toast({
+          title: "Error",
+          description: "Survey data not found",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      generatePDFReport(surveyData);
+      markPdfExported(surveyId);
+      setSurveys([...surveys]); // Trigger re-render to update badges
       toast({
-        title: "Survey deleted",
-        description: "Survey and all associated data removed successfully",
+        title: "Export Complete",
+        description: "PDF report has been downloaded",
+      });
+    } catch (error) {
+      toast({
+        title: "Export Failed",
+        description: "Failed to generate PDF report",
+        variant: "destructive",
       });
     }
+  };
+
+  const handleDeleteSurvey = (surveyId: string, siteName: string) => {
+    deleteSurvey(surveyId);
+    setSurveys(getSurveys());
+    toast({
+      title: "Survey Deleted",
+      description: `Survey for ${siteName} has been deleted`,
+    });
   };
 
   const getSurveyStats = (surveyId: string) => {
@@ -72,18 +116,53 @@ export default function Dashboard() {
       <Navigation 
         title="AX4 Survey Tool" 
         actions={
-          <Button 
-            onClick={() => navigate('/new-survey')}
-            variant="professional"
-            size="sm"
-          >
-            <Plus className="h-4 w-4" />
-            New Survey
-          </Button>
+          <div className="flex gap-2">
+            <Button 
+              onClick={() => navigate('/history')}
+              variant="outline"
+              size="sm"
+              className="hidden sm:flex items-center gap-2"
+            >
+              <History className="h-4 w-4" />
+              History
+            </Button>
+            <Button 
+              onClick={() => navigate('/new-survey')}
+              variant="professional"
+              size="sm"
+              className="flex items-center gap-2"
+            >
+              <Plus className="h-4 w-4" />
+              <span className="hidden sm:inline">New Survey</span>
+              <span className="sm:hidden">New</span>
+            </Button>
+          </div>
         }
       />
       
       <div className="container mx-auto p-4 space-y-6">
+        {/* Mobile Quick Actions */}
+        <div className="sm:hidden flex gap-2">
+          <Button 
+            onClick={() => navigate('/history')}
+            variant="outline"
+            size="sm"
+            className="flex-1 flex items-center gap-2"
+          >
+            <History className="h-4 w-4" />
+            View History
+          </Button>
+        </div>
+
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Dashboard</h1>
+            <p className="text-muted-foreground">
+              Manage your asbestos surveys and generate reports
+            </p>
+          </div>
+        </div>
         {/* Header Stats */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Card>
@@ -177,17 +256,49 @@ export default function Dashboard() {
                             onClick={() => handleGenerateReport(survey.surveyId)}
                             variant="outline"
                             size="sm"
+                            className="min-h-[44px] px-3"
                           >
                             <Download className="h-4 w-4" />
-                            DOCX
+                            <span className="hidden sm:inline ml-1">DOCX</span>
                           </Button>
                           <Button
-                            onClick={() => handleDeleteSurvey(survey.surveyId, survey.siteName)}
-                            variant="destructive"
+                            onClick={() => handleGeneratePDFReport(survey.surveyId)}
+                            variant="outline"
                             size="sm"
+                            className="min-h-[44px] px-3"
                           >
-                            <Trash2 className="h-4 w-4" />
+                            <FileText className="h-4 w-4" />
+                            <span className="hidden sm:inline ml-1">PDF</span>
                           </Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                variant="destructive"
+                                size="sm"
+                                className="min-h-[44px] px-3"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Delete Survey</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Are you sure you want to delete the survey for {survey.siteName}? 
+                                  This action cannot be undone and will remove all associated data.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => handleDeleteSurvey(survey.surveyId, survey.siteName)}
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                >
+                                  Delete Survey
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
                         </div>
                       </div>
                     </CardHeader>
@@ -229,17 +340,19 @@ export default function Dashboard() {
                           onClick={() => navigate(`/survey/${survey.surveyId}`)}
                           variant="professional"
                           size="sm"
-                          className="flex-1"
+                          className="flex-1 min-h-[44px]"
                         >
-                          Continue Survey
+                          <span className="sm:hidden">Continue</span>
+                          <span className="hidden sm:inline">Continue Survey</span>
                         </Button>
                         <Button
                           onClick={() => navigate(`/survey/${survey.surveyId}`)}
                           variant="outline"
                           size="sm"
+                          className="min-h-[44px] px-3"
                         >
                           <FileText className="h-4 w-4" />
-                          Preview
+                          <span className="hidden sm:inline ml-1">Preview</span>
                         </Button>
                       </div>
                     </CardContent>

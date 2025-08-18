@@ -10,6 +10,7 @@ import { clearExpiredDrafts } from "@/utils/draftStorage";
 
 // Lazy load heavy components
 const Dashboard = lazy(() => import("./pages/Dashboard"));
+const History = lazy(() => import("./pages/History"));
 const NewSurvey = lazy(() => import("./pages/NewSurvey"));
 const SurveyDetail = lazy(() => import("./pages/SurveyDetail"));
 const AddRoom = lazy(() => import("./pages/AddRoom"));
@@ -35,6 +36,7 @@ const App = () => {
           <BrowserRouter>
             <Routes>
               <Route path="/" element={<LazyLoader><Dashboard /></LazyLoader>} />
+              <Route path="/history" element={<LazyLoader><History /></LazyLoader>} />
               <Route path="/new-survey" element={<LazyLoader><NewSurvey /></LazyLoader>} />
               <Route path="/survey/:surveyId" element={<LazyLoader><SurveyDetail /></LazyLoader>} />
               <Route path="/survey/:surveyId/add-room" element={<LazyLoader><AddRoom /></LazyLoader>} />
