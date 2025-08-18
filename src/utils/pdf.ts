@@ -1,5 +1,5 @@
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
+import { jsPDF } from 'jspdf';
+import 'jspdf-autotable';
 import { SurveyData, Item } from '@/types/survey';
 
 export const generatePDFReport = (surveyData: SurveyData, selectedItems?: Item[]): void => {
@@ -101,7 +101,7 @@ export const generatePDFReport = (surveyData: SurveyData, selectedItems?: Item[]
       item.recommendation || 'Monitor'
     ]);
     
-    autoTable(doc, {
+    (doc as any).autoTable({
       startY: yPos,
       head: [['Ref', 'Location', 'Material', 'Asbestos Types', 'Condition', 'Risk', 'Recommendation']],
       body: tableData,
