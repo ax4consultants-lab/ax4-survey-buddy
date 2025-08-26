@@ -1,158 +1,215 @@
 import { jsPDF } from 'jspdf';
 import 'jspdf-autotable';
-import { SurveyData, Item } from '@/types/survey';
+import { ReportData, groupReportRows } from '@/export/buildReportData';
+import { photoToDataUrl } from '@/utils/photo';
 
-export const generatePDFReport = (surveyData: SurveyData, selectedItems?: Item[]): void => {
-  const { survey, items: allItems } = surveyData;
-  const items = selectedItems || allItems;
-  
-  const doc = new jsPDF();
-  const pageWidth = doc.internal.pageSize.width;
-  
-  // Header
-  doc.setFontSize(20);
-  doc.setFont('helvetica', 'bold');
-  doc.text('AX4 Asbestos Survey Report', pageWidth / 2, 20, { align: 'center' });
-  
-  // Job Information
-  let yPos = 40;
-  doc.setFontSize(12);
-  doc.setFont('helvetica', 'normal');
-  
-  const jobInfo = [
-    ['Job ID:', survey.jobId],
-    ['Site Name:', survey.siteName],
-    ['Client:', survey.clientName],
-    ['Contact:', survey.siteContactName || 'N/A'],
-    ['Phone:', survey.siteContactPhone || 'N/A'],
-    ['Survey Type:', survey.surveyType],
-    ['Document Type:', survey.documentType],
-    ['Surveyor:', survey.surveyor],
-    ['Date:', new Date(survey.date).toLocaleDateString()]
-  ];
-  
-  jobInfo.forEach(([label, value]) => {
+export const generatePDFReport = async (reportData: ReportData): Promise<void> => {
+  try {
+    const { survey, rows, summary, settings } = reportData;
+    
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.width;
+    let yPos = 20;
+
+    // Header with company logo if available
+    if (settings?.companyLogo) {
+      try {
+        doc.addImage(settings.companyLogo, 'JPEG', 20, yPos, 30, 20);
+        yPos += 25;
+      } catch (error) {
+        console.warn('Could not add logo to PDF:', error);
+      }
+    }
+
+    // Title
+    doc.setFontSize(20);
     doc.setFont('helvetica', 'bold');
-    doc.text(label, 20, yPos);
+    doc.text('AX4 Asbestos Survey Report', pageWidth / 2, yPos, { align: 'center' });
+    yPos += 20;
+
+    // Job Information
+    doc.setFontSize(12);
     doc.setFont('helvetica', 'normal');
-    doc.text(value, 80, yPos);
-    yPos += 7;
-  });
-  
-  // Executive Summary
-  yPos += 10;
-  doc.setFontSize(14);
-  doc.setFont('helvetica', 'bold');
-  doc.text('Executive Summary', 20, yPos);
-  
-  yPos += 10;
-  doc.setFontSize(10);
-  doc.setFont('helvetica', 'normal');
-  
-  const buildingAreas = [...new Set(items.map(item => item.buildingArea))];
-  const highRiskItems = items.filter(item => item.riskLevel === 'High');
-  const actionItems = items.filter(item => 
-    item.recommendation && item.recommendation.toLowerCase().includes('remove')
-  );
-  
-  const summaryText = `Based on the survey conducted at ${survey.siteName} on ${new Date(survey.date).toLocaleDateString()}, a total of ${items.length} suspect materials were identified across ${buildingAreas.length} areas. ${highRiskItems.length} items are classified as high risk and ${actionItems.length} items require immediate action due to condition or location.`;
-  
-  const splitText = doc.splitTextToSize(summaryText, pageWidth - 40);
-  doc.text(splitText, 20, yPos);
-  yPos += splitText.length * 5 + 10;
-  
-  // Items Table
-  if (yPos > 200) {
-    doc.addPage();
-    yPos = 20;
-  }
-  
-  doc.setFontSize(14);
-  doc.setFont('helvetica', 'bold');
-  doc.text('Survey Items', 20, yPos);
-  yPos += 10;
-  
-  // Group items by building area and location
-  const groupedItems = items.reduce((acc, item) => {
-    const key = `${item.buildingArea} - ${item.externalInternal}`;
-    if (!acc[key]) acc[key] = [];
-    acc[key].push(item);
-    return acc;
-  }, {} as Record<string, Item[]>);
-  
-  Object.entries(groupedItems).forEach(([groupName, groupItems]) => {
-    if (yPos > 250) {
+    
+    const jobInfo = [
+      ['Job ID:', survey.jobId],
+      ['Site Name:', survey.siteName],
+      ['Client:', survey.clientName],
+      ['Contact:', survey.siteContactName || 'N/A'],
+      ['Phone:', survey.siteContactPhone || 'N/A'],
+      ['Survey Type:', survey.surveyType],
+      ['Document Type:', survey.documentType],
+      ['Surveyor:', settings?.assessorName || survey.surveyor],
+      ['Date:', new Date(survey.date).toLocaleDateString()]
+    ];
+    
+    jobInfo.forEach(([label, value]) => {
+      doc.setFont('helvetica', 'bold');
+      doc.text(label, 20, yPos);
+      doc.setFont('helvetica', 'normal');
+      doc.text(value, 80, yPos);
+      yPos += 7;
+    });
+
+    // Executive Summary
+    yPos += 10;
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Executive Summary', 20, yPos);
+    
+    yPos += 10;
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    
+    const summaryText = `Based on the survey conducted at ${survey.siteName} on ${new Date(survey.date).toLocaleDateString()}, a total of ${summary.totalItems} suspect materials were identified across ${summary.buildingAreas.length} areas. ${summary.highRiskItems} items are classified as high risk and ${summary.actionItems} items require immediate action due to condition or location.`;
+    
+    const splitText = doc.splitTextToSize(summaryText, pageWidth - 40);
+    doc.text(splitText, 20, yPos);
+    yPos += splitText.length * 5 + 15;
+
+    // Check for page break
+    if (yPos > 200) {
       doc.addPage();
       yPos = 20;
     }
+
+    // Items Table
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Survey Items', 20, yPos);
+    yPos += 10;
+
+    // Group rows by building area and location
+    const groupedRows = groupReportRows(rows);
+    
+    Object.entries(groupedRows).forEach(([groupName, groupRows]) => {
+      if (yPos > 250) {
+        doc.addPage();
+        yPos = 20;
+      }
+      
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'bold');
+      doc.text(groupName, 20, yPos);
+      yPos += 10;
+      
+      const tableData = groupRows.map(row => [
+        row.referenceNumber,
+        row.fullLocation,
+        row.materialType,
+        row.asbestosTypes,
+        row.condition,
+        row.riskLevel,
+        row.recommendation || 'Monitor'
+      ]);
+      
+      (doc as any).autoTable({
+        startY: yPos,
+        head: [['Ref', 'Location', 'Material', 'Asbestos Types', 'Condition', 'Risk', 'Recommendation']],
+        body: tableData,
+        styles: { fontSize: 8 },
+        headStyles: { fillColor: [66, 139, 202] },
+        didParseCell: (data: any) => {
+          // Highlight high-risk items
+          if (data.row.index >= 0 && groupRows[data.row.index]?.isHighRisk) {
+            data.cell.styles.fillColor = [255, 235, 238];
+            data.cell.styles.textColor = [198, 40, 40];
+            data.cell.styles.fontStyle = 'bold';
+          }
+        },
+        margin: { left: 20, right: 20 }
+      });
+      
+      yPos = (doc as any).lastAutoTable.finalY + 15;
+    });
+
+    // Add photos if included
+    if (summary.totalPhotos > 0) {
+      doc.addPage();
+      yPos = 20;
+      
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Photo Documentation', 20, yPos);
+      yPos += 15;
+
+      for (const row of rows) {
+        if (row.photos.length > 0) {
+          if (yPos > 250) {
+            doc.addPage();
+            yPos = 20;
+          }
+
+          doc.setFontSize(10);
+          doc.setFont('helvetica', 'bold');
+          doc.text(`${row.referenceNumber} - ${row.fullLocation}`, 20, yPos);
+          yPos += 10;
+
+          // Add up to 2 photos per row to fit on page
+          const photosToShow = row.photos.slice(0, 2);
+          for (let i = 0; i < photosToShow.length; i++) {
+            try {
+              const photoDataUrl = await photoToDataUrl(photosToShow[i]);
+              const imgWidth = 80;
+              const imgHeight = 60;
+              const xPos = 20 + (i * 90);
+              
+              doc.addImage(photoDataUrl, 'JPEG', xPos, yPos, imgWidth, imgHeight);
+            } catch (error) {
+              console.warn('Could not add photo to PDF:', error);
+            }
+          }
+          yPos += 70;
+        }
+      }
+    }
+
+    // Footer Section
+    doc.addPage();
+    yPos = 20;
     
     doc.setFontSize(12);
     doc.setFont('helvetica', 'bold');
-    doc.text(groupName, 20, yPos);
-    yPos += 10;
+    doc.text('Report Metadata', 20, yPos);
     
-    const tableData = groupItems.map(item => [
-      item.referenceNumber,
-      `${item.location1} - ${item.location2}`,
-      item.materialType,
-      item.asbestosTypes.join(', ') || 'Not specified',
-      item.condition,
-      item.riskLevel,
-      item.recommendation || 'Monitor'
-    ]);
-    
-    (doc as any).autoTable({
-      startY: yPos,
-      head: [['Ref', 'Location', 'Material', 'Asbestos Types', 'Condition', 'Risk', 'Recommendation']],
-      body: tableData,
-      styles: { fontSize: 8 },
-      headStyles: { fillColor: [66, 139, 202] },
-      didParseCell: (data) => {
-        // Highlight high-risk items
-        if (data.row.index >= 0 && groupItems[data.row.index]?.riskLevel === 'High') {
-          data.cell.styles.fillColor = [255, 235, 238];
-          data.cell.styles.textColor = [198, 40, 40];
-          data.cell.styles.fontStyle = 'bold';
-        }
-      },
-      margin: { left: 20, right: 20 }
-    });
-    
-    yPos = (doc as any).lastAutoTable.finalY + 15;
-  });
-  
-  // Footer Section
-  if (yPos > 220) {
-    doc.addPage();
-    yPos = 20;
-  }
-  
-  yPos += 20;
-  doc.setFontSize(12);
-  doc.setFont('helvetica', 'bold');
-  doc.text('Report Metadata', 20, yPos);
-  
-  yPos += 10;
-  doc.setFontSize(10);
-  doc.setFont('helvetica', 'normal');
-  
-  const footerInfo = [
-    ['Job ID:', survey.jobId],
-    ['Surveyor:', survey.surveyor],
-    ['Site:', survey.siteName],
-    ['Exported:', new Date().toLocaleString()],
-    ['Generated by:', 'AX4 Survey Buddy']
-  ];
-  
-  footerInfo.forEach(([label, value]) => {
-    doc.setFont('helvetica', 'bold');
-    doc.text(label, 20, yPos);
+    yPos += 15;
+    doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
-    doc.text(value, 80, yPos);
-    yPos += 7;
-  });
-  
-  // Save the PDF
-  const fileName = `${survey.jobId}_${survey.siteName.replace(/[^a-zA-Z0-9]/g, '_')}_Survey_Report.pdf`;
-  doc.save(fileName);
+    
+    const footerInfo = [
+      ['Job ID:', survey.jobId],
+      ['Surveyor:', settings?.assessorName || survey.surveyor],
+      ['Company:', settings?.companyName || 'AX4 Survey Buddy'],
+      ['Site:', survey.siteName],
+      ['Exported:', new Date().toLocaleString()],
+      ['Version:', settings?.version || '1.0.0'],
+      ['Generated by:', 'AX4 Survey Buddy']
+    ];
+    
+    footerInfo.forEach(([label, value]) => {
+      doc.setFont('helvetica', 'bold');
+      doc.text(label, 20, yPos);
+      doc.setFont('helvetica', 'normal');
+      doc.text(value, 80, yPos);
+      yPos += 7;
+    });
+
+    // Add disclaimer if available
+    if (settings?.defaultDisclaimer) {
+      yPos += 10;
+      doc.setFont('helvetica', 'bold');
+      doc.text('Disclaimer:', 20, yPos);
+      yPos += 7;
+      doc.setFont('helvetica', 'normal');
+      const disclaimerText = doc.splitTextToSize(settings.defaultDisclaimer, pageWidth - 40);
+      doc.text(disclaimerText, 20, yPos);
+    }
+
+    // Save the PDF
+    const fileName = `${survey.jobId}_${survey.siteName.replace(/[^a-zA-Z0-9]/g, '_')}_Survey_Report.pdf`;
+    doc.save(fileName);
+  } catch (error) {
+    console.error('Error generating PDF report:', error);
+    throw new Error('Failed to generate PDF report');
+  }
 };
