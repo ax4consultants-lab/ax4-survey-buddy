@@ -74,17 +74,10 @@ export const buildReportData = async (
     filteredItems = filteredItems.filter(item => selectedItemIds.includes(item.itemId));
   }
 
-  // Filter by selected rooms (assuming items have roomId or can be linked to rooms)
+  // Filter by selected rooms using roomId
   if (selectedRoomIds && selectedRoomIds.length > 0) {
-    const roomNames = surveyData.rooms
-      .filter(room => selectedRoomIds.includes(room.roomId))
-      .map(room => room.roomName);
-    
-    // Filter items by location2 (room name) - this may need adjustment based on your data model
     filteredItems = filteredItems.filter(item => 
-      roomNames.some(roomName => 
-        item.location2.toLowerCase().includes(roomName.toLowerCase())
-      )
+      selectedRoomIds.includes(item.roomId)
     );
   }
 

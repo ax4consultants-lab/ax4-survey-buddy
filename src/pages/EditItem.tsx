@@ -13,8 +13,8 @@ import { RecommendationSelect } from "@/components/RecommendationSelect";
 import { Save, Camera, Package, Building2, AlertTriangle, Upload, Hash } from "lucide-react";
 import { saveItem, generateId, getRoomsBySurveyId, getSurveyById, getItems } from "@/utils/storage";
 import { capturePhoto, resizeImage, blobToDataURL } from "@/utils/camera";
-import { savePhoto } from "@/utils/storage";
-import { Item } from "@/types/survey";
+import { processAndSavePhoto, generatePhotoId } from "@/utils/photo";
+import { Item } from "@/schemas";
 import { useToast } from "@/hooks/use-toast";
 
 const MATERIAL_TYPES = [
@@ -115,7 +115,7 @@ export default function EditItem() {
         recommendation: item.recommendation,
         notes: item.notes || '',
       });
-      setPhotos(item.photos || []);
+      setPhotos((item as any).photoIds || item.photos || []);
       setPhotoReferences(item.photoReferences || []);
     }
     
@@ -130,11 +130,9 @@ export default function EditItem() {
     setIsCapturing(true);
     try {
       const blob = await capturePhoto();
-      const dataUrl = await blobToDataURL(blob);
-      const resized = await resizeImage(dataUrl, 1024, 0.8);
-      const photoId = generateId();
+      const photoId = generatePhotoId();
       
-      savePhoto(photoId, resized);
+      await processAndSavePhoto(blob, photoId);
       setPhotos(prev => [...prev, photoId]);
       
       toast({
@@ -152,7 +150,7 @@ export default function EditItem() {
     }
   };
 
-  const handleUploadPhoto = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleUploadPhoto = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
@@ -165,29 +163,22 @@ export default function EditItem() {
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = async (e) => {
-      try {
-        const photoData = e.target?.result as string;
-        const resizedPhoto = await resizeImage(photoData, 1024, 0.8);
-        const photoId = generateId();
-        
-        savePhoto(photoId, resizedPhoto);
-        setPhotos(prev => [...prev, photoId]);
-        
-        toast({
-          title: "Photo uploaded",
-          description: "Photo added to item",
-        });
-      } catch (error) {
-        toast({
-          title: "Upload error",
-          description: "Failed to process uploaded photo",
-          variant: "destructive",
-        });
-      }
-    };
-    reader.readAsDataURL(file);
+    try {
+      const photoId = generatePhotoId();
+      await processAndSavePhoto(file, photoId);
+      setPhotos(prev => [...prev, photoId]);
+      
+      toast({
+        title: "Photo uploaded",
+        description: "Photo added to item",
+      });
+    } catch (error) {
+      toast({
+        title: "Upload error",
+        description: "Failed to process uploaded photo",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleAddPhotoReference = () => {
@@ -235,8 +226,9 @@ export default function EditItem() {
       return;
     }
 
-    const updatedItem: Item = {
+    const updatedItem = {
       ...existingItem,
+      roomId: (existingItem as any).roomId || 'default-room',
       buildingArea: formData.buildingArea,
       externalInternal: formData.externalInternal,
       location1: formData.location1,
@@ -259,11 +251,12 @@ export default function EditItem() {
       riskLevel: formData.riskLevel,
       recommendation: formData.recommendation,
       notes: formData.notes || undefined,
+      photoIds: photos,
       photos,
       photoReferences,
-    };
+    } as Item;
 
-    saveItem(updatedItem);
+    saveItem(updatedItem as any);
     
     toast({
       title: "Item updated",

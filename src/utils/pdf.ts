@@ -2,6 +2,7 @@ import { jsPDF } from 'jspdf';
 import 'jspdf-autotable';
 import { ReportData, groupReportRows } from '@/export/buildReportData';
 import { photoToDataUrl } from '@/utils/photo';
+import { getReportMetadata } from '@/utils/version';
 
 export const generatePDFReport = async (reportData: ReportData): Promise<void> => {
   try {
@@ -31,25 +32,29 @@ export const generatePDFReport = async (reportData: ReportData): Promise<void> =
     doc.setFontSize(12);
     doc.setFont('helvetica', 'normal');
     
-    const jobInfo = [
-      ['Job ID:', survey.jobId],
-      ['Site Name:', survey.siteName],
-      ['Client:', survey.clientName],
-      ['Contact:', survey.siteContactName || 'N/A'],
-      ['Phone:', survey.siteContactPhone || 'N/A'],
-      ['Survey Type:', survey.surveyType],
-      ['Document Type:', survey.documentType],
-      ['Surveyor:', settings?.assessorName || survey.surveyor],
-      ['Date:', new Date(survey.date).toLocaleDateString()]
-    ];
+    doc.text(`Job ID: ${survey.jobId}`, 20, yPos);
+    yPos += 10;
+    doc.text(`Date: ${new Date(survey.date).toLocaleDateString()}`, 20, yPos);
+    yPos += 10;
+    doc.text(`Surveyor: ${survey.surveyor}`, 20, yPos);
+    yPos += 10;
     
-    jobInfo.forEach(([label, value]) => {
-      doc.setFont('helvetica', 'bold');
-      doc.text(label, 20, yPos);
-      doc.setFont('helvetica', 'normal');
-      doc.text(value, 80, yPos);
-      yPos += 7;
-    });
+    // Add assessor/company info if available
+    if (settings) {
+      if (settings.assessorName) {
+        doc.text(`Assessor: ${settings.assessorName}`, 20, yPos);
+        yPos += 10;
+      }
+      if (settings.assessorLicence) {
+        doc.text(`Licence: ${settings.assessorLicence}`, 20, yPos);
+        yPos += 10;
+      }
+      if (settings.companyName) {
+        doc.text(`Company: ${settings.companyName}`, 20, yPos);
+        yPos += 10;
+      }
+    }
+    yPos += 10;
 
     // Executive Summary
     yPos += 10;
@@ -203,6 +208,33 @@ export const generatePDFReport = async (reportData: ReportData): Promise<void> =
       doc.setFont('helvetica', 'normal');
       const disclaimerText = doc.splitTextToSize(settings.defaultDisclaimer, pageWidth - 40);
       doc.text(disclaimerText, 20, yPos);
+    }
+
+    // Footer with settings data
+    const pageCount = doc.getNumberOfPages();
+    const footerText = settings?.defaultFooter || 
+      getReportMetadata(settings?.assessorName, settings?.companyName);
+    
+    for (let i = 1; i <= pageCount; i++) {
+      doc.setPage(i);
+      doc.setFontSize(8);
+      doc.text(`Page ${i} of ${pageCount}`, 20, 285);
+      
+      // Split footer text if too long
+      const maxWidth = 150;
+      const footerLines = doc.splitTextToSize(footerText, maxWidth);
+      let footerY = 285;
+      
+      footerLines.forEach((line: string, index: number) => {
+        if (index === 0) {
+          doc.text(line, 105, footerY);
+        } else {
+          footerY += 8;
+          if (footerY < 290) { // Don't go beyond page bounds
+            doc.text(line, 105, footerY);
+          }
+        }
+      });
     }
 
     // Save the PDF

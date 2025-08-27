@@ -19,6 +19,7 @@ import { generateDOCXReport } from '@/utils/docx';
 import { generatePDFReport } from '@/utils/pdf';
 import { createEncryptedArchive } from '@/utils/encryption';
 import { getSettings } from '@/storage/db';
+import { useNavigate } from 'react-router-dom';
 
 interface ExportDialogProps {
   isOpen: boolean;
@@ -34,6 +35,7 @@ const ExportDialog: React.FC<ExportDialogProps> = ({
   selectedItems,
 }) => {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [selectedRooms, setSelectedRooms] = useState<string[]>([]);
   const [includePhotos, setIncludePhotos] = useState(true);
   const [maxPhotosPerItem, setMaxPhotosPerItem] = useState(10);
@@ -146,7 +148,20 @@ const ExportDialog: React.FC<ExportDialogProps> = ({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Export Survey Report</DialogTitle>
+          <div className="flex items-center justify-between">
+            <DialogTitle>Export Survey Report</DialogTitle>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                onClose();
+                navigate('/settings');
+              }}
+              className="h-8 w-8 p-0"
+            >
+              <Settings className="h-4 w-4" />
+            </Button>
+          </div>
         </DialogHeader>
 
         <div className="space-y-6">
@@ -271,7 +286,7 @@ const ExportDialog: React.FC<ExportDialogProps> = ({
               </div>
               <Button
                 onClick={handleExportEncrypted}
-                disabled={isExporting || !encryptionPassphrase}
+                disabled={isExporting || !encryptionPassphrase.trim()}
                 className="w-full"
               >
                 <Lock className="h-4 w-4 mr-2" />

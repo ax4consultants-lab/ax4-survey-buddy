@@ -25,6 +25,7 @@ export const RoomSchema = z.object({
 export const ItemSchema = z.object({
   itemId: z.string(),
   surveyId: z.string(),
+  roomId: z.string(),
   referenceNumber: z.string(),
   photoReference: z.string().optional(),
   buildingArea: z.string(),

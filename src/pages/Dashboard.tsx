@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { RiskBadge } from "@/components/RiskBadge";
-import { Plus, FileText, Download, MapPin, Clock, Building2, Trash2, History } from "lucide-react";
+import { Plus, FileText, Download, MapPin, Clock, Building2, Trash2, History, Settings as SettingsIcon } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { getSurveys, getItemsBySurveyId, getSurveyData, deleteSurvey } from "@/utils/storage";
 import { getSettings } from "@/storage/db";
@@ -131,6 +131,15 @@ export default function Dashboard() {
             >
               <History className="h-4 w-4" />
               History
+            </Button>
+            <Button 
+              onClick={() => navigate('/settings')}
+              variant="outline"
+              size="sm"
+              className="flex items-center gap-2"
+            >
+              <SettingsIcon className="h-4 w-4" />
+              <span className="hidden sm:inline">Settings</span>
             </Button>
             <Button 
               onClick={() => navigate('/new-survey')}

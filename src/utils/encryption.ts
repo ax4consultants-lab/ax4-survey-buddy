@@ -1,7 +1,7 @@
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 import { SurveyData } from '@/schemas';
-import { getPhotosForItem, PhotoData } from '@/storage/db';
+import { getPhoto, getPhotosForItem, PhotoData } from '@/storage/db';
 
 export interface EncryptedArchive {
   encryptedData: ArrayBuffer;
