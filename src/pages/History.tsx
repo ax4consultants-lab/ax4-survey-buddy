@@ -17,8 +17,10 @@ import {
 } from 'lucide-react';
 import { Survey } from '@/types/survey';
 import { getSurveys, getSurveyData, deleteSurvey } from '@/utils/storage';
+import { getSettings } from '@/storage/db';
 import { generateDOCXReport } from '@/utils/docx';
 import { generatePDFReport } from '@/utils/pdf';
+import { buildReportData } from '@/export/buildReportData';
 import { 
   getExportStatus, 
   markDocxExported, 
@@ -65,7 +67,9 @@ const History = () => {
         return;
       }
 
-      await generateDOCXReport(surveyData);
+      const settings = await getSettings();
+      const reportData = await buildReportData(surveyData, settings);
+      await generateDOCXReport(reportData);
       markDocxExported(surveyId);
       setSurveys([...surveys]); // Trigger re-render to update badges
       
@@ -94,7 +98,9 @@ const History = () => {
         return;
       }
 
-      generatePDFReport(surveyData);
+      const settings = await getSettings();
+      const reportData = await buildReportData(surveyData, settings);
+      await generatePDFReport(reportData);
       markPdfExported(surveyId);
       setSurveys([...surveys]); // Trigger re-render to update badges
       

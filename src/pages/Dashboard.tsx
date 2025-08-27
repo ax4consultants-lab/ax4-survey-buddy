@@ -7,8 +7,10 @@ import { RiskBadge } from "@/components/RiskBadge";
 import { Plus, FileText, Download, MapPin, Clock, Building2, Trash2, History } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { getSurveys, getItemsBySurveyId, getSurveyData, deleteSurvey } from "@/utils/storage";
+import { getSettings } from "@/storage/db";
 import { generateDOCXReport } from "@/utils/docx";
 import { generatePDFReport } from "@/utils/pdf";
+import { buildReportData } from "@/export/buildReportData";
 import { Survey } from "@/types/survey";
 import { useToast } from "@/hooks/use-toast";
 import { 
@@ -49,7 +51,9 @@ export default function Dashboard() {
         return;
       }
       
-      await generateDOCXReport(surveyData);
+      const settings = await getSettings();
+      const reportData = await buildReportData(surveyData, settings);
+      await generateDOCXReport(reportData);
       setSurveys([...surveys]); // Trigger re-render to update badges
       toast({
         title: "Export Complete",
@@ -76,7 +80,9 @@ export default function Dashboard() {
         return;
       }
       
-      generatePDFReport(surveyData);
+      const settings = await getSettings();
+      const reportData = await buildReportData(surveyData, settings);
+      await generatePDFReport(reportData);
       markPdfExported(surveyId);
       setSurveys([...surveys]); // Trigger re-render to update badges
       toast({

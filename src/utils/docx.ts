@@ -1,23 +1,23 @@
 import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, AlignmentType, BorderStyle, HeadingLevel, PageBreak } from 'docx';
 import { saveAs } from 'file-saver';
 import { SurveyData, Item } from '@/types/survey';
+import { ReportData } from '@/export/buildReportData';
 import { markDocxExported } from './exportStatus';
 
-export const generateDOCXReport = async (surveyData: SurveyData, selectedItems?: Item[]): Promise<void> => {
-  const { survey, items } = surveyData;
-  const reportItems = selectedItems || items;
+export const generateDOCXReport = async (reportData: ReportData): Promise<void> => {
+  const { survey, rows } = reportData;
   
-  // Group items by building area and external/internal for structured report
-  const groupedItems = reportItems.reduce((acc, item) => {
-    const groupKey = `${item.buildingArea}_${item.externalInternal}`;
+  // Group rows by building area and external/internal for structured report
+  const groupedItems = rows.reduce((acc, row) => {
+    const groupKey = `${row.buildingArea}_${row.externalInternal}`;
     if (!acc[groupKey]) {
       acc[groupKey] = {
-        buildingArea: item.buildingArea,
-        externalInternal: item.externalInternal,
+        buildingArea: row.buildingArea,
+        externalInternal: row.externalInternal,
         items: []
       };
     }
-    acc[groupKey].items.push(item);
+    acc[groupKey].items.push(row);
     return acc;
   }, {} as Record<string, { buildingArea: string; externalInternal: string; items: any[] }>);
 
@@ -116,7 +116,7 @@ export const generateDOCXReport = async (surveyData: SurveyData, selectedItems?:
     new Paragraph({
       children: [
         new TextRun({
-          text: `Based on the survey conducted at ${survey.siteName} on ${new Date(survey.date).toLocaleDateString()}, a total of ${reportItems.length} suspect materials were identified across ${[...new Set(reportItems.map(item => item.buildingArea))].length} areas. ${reportItems.filter(item => item.riskLevel === 'High' || item.riskLevel === 'Medium').length} items require action due to condition or location.`,
+          text: `Based on the survey conducted at ${survey.siteName} on ${new Date(survey.date).toLocaleDateString()}, a total of ${rows.length} suspect materials were identified across ${[...new Set(rows.map(row => row.buildingArea))].length} areas. ${rows.filter(row => row.riskLevel === 'High' || row.riskLevel === 'Medium').length} items require action due to condition or location.`,
           size: 22
         })
       ],
@@ -437,7 +437,7 @@ export const generateDOCXReport = async (surveyData: SurveyData, selectedItems?:
     new Paragraph({
       children: [
         new TextRun({
-          text: `Items in Report: ${reportItems.length} of ${items.length} total items`,
+          text: `Items in Report: ${rows.length} total items`,
           bold: true
         })
       ],
@@ -481,5 +481,5 @@ export const generateDOCXReport = async (surveyData: SurveyData, selectedItems?:
   saveAs(buffer, fileName);
   
   // Mark as exported
-  markDocxExported(surveyData.survey.surveyId);
+  markDocxExported(survey.surveyId);
 };

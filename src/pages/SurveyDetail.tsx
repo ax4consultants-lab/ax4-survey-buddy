@@ -8,6 +8,8 @@ import { RiskBadge } from "@/components/RiskBadge";
 import { Plus, Building2, Package, FileText, Download, Edit } from "lucide-react";
 import { getSurveyById, getRoomsBySurveyId, getItemsBySurveyId, getSurveyData } from "@/utils/storage";
 import { generateDOCXReport } from "@/utils/docx";
+import { buildReportData } from "@/export/buildReportData";
+import { getSettings } from "@/storage/db";
 import { Survey, Room, Item } from "@/types/survey";
 import { useToast } from "@/hooks/use-toast";
 
@@ -49,7 +51,9 @@ export default function SurveyDetail() {
         return;
       }
       
-      await generateDOCXReport(surveyData);
+      const settings = await getSettings();
+      const reportData = await buildReportData(surveyData, settings);
+      await generateDOCXReport(reportData);
       toast({
         title: "Success",
         description: "DOCX report generated successfully",
