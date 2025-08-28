@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Save, Building2 } from "lucide-react";
 import { saveRoom, generateId } from "@/utils/storage";
-import { Room } from "@/types/survey";
+import { Room } from "@/schemas";
 import { useToast } from "@/hooks/use-toast";
 
 export default function AddRoom() {

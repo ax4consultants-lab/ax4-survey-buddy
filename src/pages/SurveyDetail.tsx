@@ -10,7 +10,7 @@ import { getSurveyById, getRoomsBySurveyId, getItemsBySurveyId, getSurveyData } 
 import { generateDOCXReport } from "@/utils/docx";
 import { buildReportData } from "@/export/buildReportData";
 import { getSettings } from "@/storage/db";
-import { Survey, Room, Item } from "@/types/survey";
+import { Survey, Room, Item } from "@/schemas";
 import { useToast } from "@/hooks/use-toast";
 
 export default function SurveyDetail() {

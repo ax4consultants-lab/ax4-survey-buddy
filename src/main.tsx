@@ -1,7 +1,10 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import App from './App.tsx'
 import './index.css'
+
+const queryClient = new QueryClient()
 
 // Register service worker for offline support
 if ('serviceWorker' in navigator) {
@@ -21,6 +24,8 @@ if (!container) throw new Error('Failed to find the root element');
 
 createRoot(container).render(
   <StrictMode>
-    <App />
+    <QueryClientProvider client={queryClient}>
+      <App />
+    </QueryClientProvider>
   </StrictMode>
 );

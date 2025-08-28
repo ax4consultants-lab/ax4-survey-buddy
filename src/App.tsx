@@ -18,6 +18,7 @@ const AddItem = lazy(() => import("./pages/AddItem"));
 const EditItem = lazy(() => import("./pages/EditItem"));
 const RoomDetail = lazy(() => import("./pages/RoomDetail"));
 const Settings = lazy(() => import("./pages/Settings"));
+const RestoreArchive = lazy(() => import("./pages/RestoreArchive"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
@@ -44,7 +45,8 @@ const App = () => {
               <Route path="/survey/:surveyId/room/:roomId" element={<LazyLoader><RoomDetail /></LazyLoader>} />
               <Route path="/survey/:surveyId/add-item" element={<LazyLoader><AddItem /></LazyLoader>} />
               <Route path="/survey/:surveyId/edit-item/:itemId" element={<LazyLoader><EditItem /></LazyLoader>} />
-              <Route path="/settings" element={<LazyLoader><Settings /></LazyLoader>} />
+          <Route path="/settings" element={<LazyLoader><Settings /></LazyLoader>} />
+          <Route path="/restore" element={<LazyLoader><RestoreArchive /></LazyLoader>} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<LazyLoader><NotFound /></LazyLoader>} />
             </Routes>

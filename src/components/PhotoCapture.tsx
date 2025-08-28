@@ -3,10 +3,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Camera, RotateCcw, Check, X, Upload } from "lucide-react";
 import { capturePhoto, resizeImage, isMediaCaptureAvailable, blobToDataURL } from "@/utils/camera";
+import { processAndSavePhoto, generatePhotoId } from "@/utils/photo";
 import { useToast } from "@/hooks/use-toast";
 
 interface PhotoCaptureProps {
-  onPhotoAccepted: (dataUrl: string) => void;
+  onPhotoAccepted: (photoId: string) => void;
   onCancel?: () => void;
   className?: string;
 }
@@ -43,7 +44,11 @@ export function PhotoCapture({ onPhotoAccepted, onCancel, className }: PhotoCapt
     try {
       setIsCapturing(true);
       const mediaStream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'environment' },
+        video: { 
+          facingMode: { ideal: 'environment' }, // Prefer rear camera
+          width: { ideal: 1920 },
+          height: { ideal: 1080 }
+        },
         audio: false,
       });
       
@@ -52,12 +57,24 @@ export function PhotoCapture({ onPhotoAccepted, onCancel, className }: PhotoCapt
         videoRef.current.srcObject = mediaStream;
       }
     } catch (error) {
-      toast({
-        title: "Camera access denied",
-        description: "Please allow camera access to take photos",
-        variant: "destructive",
-      });
-      setIsCapturing(false);
+      // Fallback to any camera if rear camera fails
+      try {
+        const fallbackStream = await navigator.mediaDevices.getUserMedia({
+          video: true,
+          audio: false,
+        });
+        setStream(fallbackStream);
+        if (videoRef.current) {
+          videoRef.current.srcObject = fallbackStream;
+        }
+      } catch (fallbackError) {
+        toast({
+          title: "Camera access denied",
+          description: "Please allow camera access to take photos",
+          variant: "destructive",
+        });
+        setIsCapturing(false);
+      }
     }
   };
 
@@ -94,14 +111,30 @@ export function PhotoCapture({ onPhotoAccepted, onCancel, className }: PhotoCapt
     startCamera();
   };
 
-  const acceptPhoto = () => {
+  const acceptPhoto = async () => {
     if (previewImage) {
-      onPhotoAccepted(previewImage);
-      setPreviewImage(null);
+      try {
+        // Convert data URL to blob
+        const response = await fetch(previewImage);
+        const blob = await response.blob();
+        
+        // Process and save to IndexedDB
+        const photoId = generatePhotoId();
+        await processAndSavePhoto(blob, `photo_${photoId}.jpg`);
+        
+        onPhotoAccepted(photoId);
+        setPreviewImage(null);
+      } catch (error) {
+        toast({
+          title: "Save failed",
+          description: "Failed to save photo",
+          variant: "destructive",
+        });
+      }
     }
   };
 
-  const handleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !file.type.startsWith("image/")) {
       toast({
@@ -112,21 +145,18 @@ export function PhotoCapture({ onPhotoAccepted, onCancel, className }: PhotoCapt
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = async (ev) => {
-      try {
-        const dataUrl = ev.target?.result as string;
-        const resized = await resizeImage(dataUrl, 1024, 0.8);
-        onPhotoAccepted(resized);
-      } catch (error) {
-        toast({
-          title: "Upload failed",
-          description: "Failed to process image",
-          variant: "destructive",
-        });
-      }
-    };
-    reader.readAsDataURL(file);
+    try {
+      // Process and save to IndexedDB
+      const photoId = generatePhotoId();
+      await processAndSavePhoto(file, file.name);
+      onPhotoAccepted(photoId);
+    } catch (error) {
+      toast({
+        title: "Upload failed",
+        description: "Failed to process image",
+        variant: "destructive",
+      });
+    }
   };
 
   const cancel = () => {

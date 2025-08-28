@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Save, AlertCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { saveSurvey, generateId } from "@/utils/storage";
-import { Survey } from "@/types/survey";
+import { Survey } from "@/schemas";
 import { useToast } from "@/hooks/use-toast";
 import { saveDraft, loadDraft, removeDraft } from "@/utils/draftStorage";
 import { cn } from "@/lib/utils";

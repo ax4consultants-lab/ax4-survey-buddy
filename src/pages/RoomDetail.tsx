@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { RiskBadge } from "@/components/RiskBadge";
 import { Plus, Package, Eye, Edit, Trash2 } from "lucide-react";
 import { getSurveyById, getRoomsBySurveyId, getItemsByRoomId } from "@/utils/storage";
-import { Survey, Room, Item } from "@/types/survey";
+import { Survey, Room, Item } from "@/schemas";
 
 export default function RoomDetail() {
   const { surveyId, roomId } = useParams<{ surveyId: string; roomId: string }>();

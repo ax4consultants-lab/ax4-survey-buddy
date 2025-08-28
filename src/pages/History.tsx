@@ -15,7 +15,7 @@ import {
   ArrowLeft,
   Trash2
 } from 'lucide-react';
-import { Survey } from '@/types/survey';
+import { Survey } from '@/schemas';
 import { getSurveys, getSurveyData, deleteSurvey } from '@/utils/storage';
 import { getSettings } from '@/storage/db';
 import { generateDOCXReport } from '@/utils/docx';

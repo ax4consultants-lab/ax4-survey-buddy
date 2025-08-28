@@ -1,4 +1,4 @@
-import { Survey, Room, Item, SurveyData } from '@/types/survey';
+import { Survey, Room, Item, SurveyData } from '@/schemas';
 
 const STORAGE_KEYS = {
   SURVEYS: 'ax4_surveys',
