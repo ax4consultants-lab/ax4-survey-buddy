@@ -4,6 +4,9 @@ import { ReportData } from '@/export/buildReportData';
 import { getReportMetadata } from '@/utils/version';
 import { markDocxExported } from './exportStatus';
 
+// Helper function to safely convert values to strings
+const s = (value: any): string => value?.toString() || "";
+
 export const generateDOCXReport = async (reportData: ReportData): Promise<void> => {
   const { survey, rows, settings } = reportData;
   
@@ -216,7 +219,7 @@ export const generateDOCXReport = async (reportData: ReportData): Promise<void> 
         new Paragraph({
           children: [
             new TextRun({
-              text: `${itemNumber}. ${item.location1}, ${item.location2}, ${item.itemUse}`,
+              text: `${itemNumber}. ${s(item.location1 || item.buildingArea)}, ${s(item.location2)}, ${s(item.itemUse)}`,
               bold: true,
               size: 16,
               color: isHighRisk ? 'DC3545' : undefined
@@ -230,13 +233,16 @@ export const generateDOCXReport = async (reportData: ReportData): Promise<void> 
 
       // Findings paragraph
       const dimensionsText = item.quantity && item.unit ? 
-        `Approx. ${item.quantity} ${item.unit}${item.length ? ` (${item.length}m x ${item.width || 'varying'}m)` : ''}.` : 
+        `Approx. ${s(item.quantity)} ${s(item.unit)}${item.length ? ` (${s(item.length)}m x ${s(item.width) || 'varying'}m)` : ''}.` : 
         'Dimensions to be determined.';
       
       const asbestosTypesText = item.asbestosTypes && item.asbestosTypes.length > 0 ? 
         item.asbestosTypes.join(', ') : 'Type to be confirmed';
 
-      const findingsText = `The ${item.materialType} contains ${asbestosTypesText} asbestos. ${item.painted ? 'Painted.' : 'Not painted.'} ${item.condition} condition. ${item.friable ? 'Friable.' : 'Non friable.'} ${dimensionsText} ${item.sampleReference || 'Sample reference pending.'}. ${item.warningLabelsVisible ? 'Warning labels visible.' : 'Warning labels not visible.'} ${item.accessibility}.`;
+      const sampleText = item.sampleStatus === 'Sampled' && item.sampleReference ? 
+        s(item.sampleReference) : item.sampleStatus ? s(item.sampleStatus) : 'Sample reference pending.';
+
+      const findingsText = `The ${s(item.materialType)} contains ${asbestosTypesText} asbestos. ${item.painted ? 'Painted.' : 'Not painted.'} ${s(item.condition)} condition. ${item.friable ? 'Friable.' : 'Non friable.'} ${dimensionsText} ${sampleText}. ${item.warningLabelsVisible ? 'Warning labels visible.' : 'Warning labels not visible.'} ${s(item.accessibility)}.`;
 
       children.push(
         new Paragraph({
@@ -270,7 +276,7 @@ export const generateDOCXReport = async (reportData: ReportData): Promise<void> 
               color: isHighRisk ? 'DC3545' : undefined
             }),
             new TextRun({
-              text: `${item.riskLevel.toUpperCase()}`,
+              text: `${s(item.riskLevel).toUpperCase()}`,
               bold: true,
               color: item.riskLevel === 'High' ? 'DC3545' : item.riskLevel === 'Medium' ? 'FF8C00' : '28A745'
             }),
@@ -294,7 +300,7 @@ export const generateDOCXReport = async (reportData: ReportData): Promise<void> 
               color: isHighRisk ? 'DC3545' : undefined
             }),
             new TextRun({
-              text: item.recommendation,
+              text: s(item.recommendation || 'Monitor'),
               color: isHighRisk ? 'DC3545' : undefined
             })
           ],
@@ -329,7 +335,7 @@ export const generateDOCXReport = async (reportData: ReportData): Promise<void> 
                 bold: true
               }),
               new TextRun({
-                text: `${item.photos.length} photo(s) captured (Reference: ${item.referenceNumber})`
+                text: `${item.photos.length} photo(s) captured (Reference: ${s(item.referenceNumber)})`
               })
             ],
             spacing: { after: 200 }
@@ -347,7 +353,7 @@ export const generateDOCXReport = async (reportData: ReportData): Promise<void> 
                 bold: true
               }),
               new TextRun({
-                text: item.notes
+                text: s(item.notes)
               })
             ],
             spacing: { after: 200 }
@@ -416,7 +422,7 @@ export const generateDOCXReport = async (reportData: ReportData): Promise<void> 
     new Paragraph({
       children: [
         new TextRun({
-          text: `Job ID: ${survey.jobId}`,
+          text: `Job ID: ${s(survey.jobId)}`,
           bold: true
         })
       ],
@@ -426,7 +432,7 @@ export const generateDOCXReport = async (reportData: ReportData): Promise<void> 
     new Paragraph({
       children: [
         new TextRun({
-          text: `Surveyor: ${survey.surveyor}`,
+          text: `Surveyor: ${s(survey.surveyor)}`,
           bold: true
         })
       ],
@@ -436,7 +442,7 @@ export const generateDOCXReport = async (reportData: ReportData): Promise<void> 
     new Paragraph({
       children: [
         new TextRun({
-          text: `Site: ${survey.siteName}`,
+          text: `Site: ${s(survey.siteName)}`,
           bold: true
         })
       ],
@@ -446,7 +452,7 @@ export const generateDOCXReport = async (reportData: ReportData): Promise<void> 
     new Paragraph({
       children: [
         new TextRun({
-          text: `Survey Date: ${new Date(survey.date).toLocaleDateString()}`,
+          text: `Survey Date: ${s(new Date(survey.date).toLocaleDateString())}`,
           bold: true
         })
       ],
@@ -456,7 +462,7 @@ export const generateDOCXReport = async (reportData: ReportData): Promise<void> 
     new Paragraph({
       children: [
         new TextRun({
-          text: `Report Exported: ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()}`,
+          text: `Report Exported: ${s(new Date().toLocaleDateString())} at ${s(new Date().toLocaleTimeString())}`,
           bold: true
         })
       ],
@@ -466,7 +472,7 @@ export const generateDOCXReport = async (reportData: ReportData): Promise<void> 
     new Paragraph({
       children: [
         new TextRun({
-          text: `Items in Report: ${rows.length} total items`,
+          text: `Items in Report: ${s(rows.length)} total items`,
           bold: true
         })
       ],
