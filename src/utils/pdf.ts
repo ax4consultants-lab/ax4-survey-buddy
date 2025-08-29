@@ -130,11 +130,12 @@ export const generatePDFReport = async (reportData: ReportData): Promise<void> =
         margin: { left: 20, right: 20 }
       });
       
-      yPos = (doc as any).lastAutoTable.finalY + 15;
+      const lastY = (doc as any)?.lastAutoTable?.finalY;
+      yPos = typeof lastY === 'number' ? lastY + 15 : yPos + 15;
     });
 
     // Add photos if included
-    if (summary.totalPhotos > 0) {
+    if ((summary?.totalPhotos ?? 0) > 0) {
       doc.addPage();
       yPos = 20;
       
@@ -144,7 +145,7 @@ export const generatePDFReport = async (reportData: ReportData): Promise<void> =
       yPos += 15;
 
       for (const row of rows) {
-        if (row.photos.length > 0) {
+        if (Array.isArray(row.photos) && row.photos.length > 0) {
           if (yPos > 250) {
             doc.addPage();
             yPos = 20;
@@ -243,7 +244,9 @@ export const generatePDFReport = async (reportData: ReportData): Promise<void> =
     }
 
     // Save the PDF
-    const fileName = `${survey.jobId}_${survey.siteName.replace(/[^a-zA-Z0-9]/g, '_')}_Survey_Report.pdf`;
+    const safeJob = s(survey.jobId) || 'job';
+    const safeSite = s(survey.siteName).replace(/[^a-zA-Z0-9]/g, '_') || 'site';
+    const fileName = `${safeJob}_${safeSite}_Survey_Report.pdf`;
     doc.save(fileName);
   } catch (error) {
     console.error('Error generating PDF report:', error);
