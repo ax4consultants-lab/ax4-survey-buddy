@@ -1,6 +1,6 @@
 import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, AlignmentType, BorderStyle, HeadingLevel, PageBreak } from 'docx';
 import { saveAs } from 'file-saver';
-import { ReportData } from '@/export/buildReportData';
+import { ReportData, ReportRow } from '@/export/buildReportData';
 import { getReportMetadata } from '@/utils/version';
 import { markDocxExported } from './exportStatus';
 
@@ -22,7 +22,7 @@ export const generateDOCXReport = async (reportData: ReportData): Promise<void> 
     }
     acc[groupKey].items.push(row);
     return acc;
-  }, {} as Record<string, { buildingArea: string; externalInternal: string; items: any[] }>);
+  }, {} as Record<string, { buildingArea: string; externalInternal: string; items: ReportRow[] }>);
 
   const children = [
     // Company Header
@@ -209,17 +209,17 @@ export const generateDOCXReport = async (reportData: ReportData): Promise<void> 
     );
 
     // Add each item in the group
-    group.items.forEach((item, itemIndex) => {
+    group.items.forEach((row, itemIndex) => {
       const itemNumber = `${currentSection}.${itemIndex + 1}`;
       
       // Style high-risk items differently
-      const isHighRisk = item.riskLevel === 'High';
+      const isHighRisk = row.riskLevel === 'High';
       
       children.push(
         new Paragraph({
           children: [
             new TextRun({
-              text: `${itemNumber}. ${s(item.location1 || item.buildingArea)}, ${s(item.location2)}, ${s(item.itemUse)}`,
+              text: `${itemNumber}. ${s(row.location1 || row.buildingArea)}, ${s(row.location2)}, ${s(row.itemUse)}`,
               bold: true,
               size: 16,
               color: isHighRisk ? 'DC3545' : undefined
@@ -231,18 +231,17 @@ export const generateDOCXReport = async (reportData: ReportData): Promise<void> 
         })
       );
 
-      // Findings paragraph
-      const dimensionsText = item.quantity && item.unit ? 
-        `Approx. ${s(item.quantity)} ${s(item.unit)}${item.length ? ` (${s(item.length)}m x ${s(item.width) || 'varying'}m)` : ''}.` : 
+      // Findings paragraph  
+      const dimensionsText = row.quantity && row.unit ? 
+        `Approx. ${s(row.quantity)} ${s(row.unit)}${row.dimensions ? ` (${s(row.dimensions)})` : ''}.` : 
         'Dimensions to be determined.';
       
-      const asbestosTypesText = item.asbestosTypes && item.asbestosTypes.length > 0 ? 
-        item.asbestosTypes.join(', ') : 'Type to be confirmed';
+      const asbestosTypesText = row.asbestosTypes || 'Type to be confirmed';
 
-      const sampleText = item.sampleStatus === 'Sampled' && item.sampleReference ? 
-        s(item.sampleReference) : item.sampleStatus ? s(item.sampleStatus) : 'Sample reference pending.';
+      const sampleText = row.sampleStatus === 'Sample' && row.sampleReference ? 
+        s(row.sampleReference) : row.sampleStatus ? s(row.sampleStatus) : 'Sample reference pending.';
 
-      const findingsText = `The ${s(item.materialType)} contains ${asbestosTypesText} asbestos. ${item.painted ? 'Painted.' : 'Not painted.'} ${s(item.condition)} condition. ${item.friable ? 'Friable.' : 'Non friable.'} ${dimensionsText} ${sampleText}. ${item.warningLabelsVisible ? 'Warning labels visible.' : 'Warning labels not visible.'} ${s(item.accessibility)}.`;
+      const findingsText = `The ${s(row.materialType)} contains ${asbestosTypesText} asbestos. ${row.painted === 'Yes' ? 'Painted.' : 'Not painted.'} ${s(row.condition)} condition. ${row.friable === 'Yes' ? 'Friable.' : 'Non friable.'} ${dimensionsText} ${sampleText}. ${row.warningLabelsVisible === 'Yes' ? 'Warning labels visible.' : 'Warning labels not visible.'} ${s(row.accessibility)}.`;
 
       children.push(
         new Paragraph({
@@ -276,9 +275,9 @@ export const generateDOCXReport = async (reportData: ReportData): Promise<void> 
               color: isHighRisk ? 'DC3545' : undefined
             }),
             new TextRun({
-              text: `${s(item.riskLevel).toUpperCase()}`,
+              text: `${s(row.riskLevel).toUpperCase()}`,
               bold: true,
-              color: item.riskLevel === 'High' ? 'DC3545' : item.riskLevel === 'Medium' ? 'FF8C00' : '28A745'
+              color: row.riskLevel === 'High' ? 'DC3545' : row.riskLevel === 'Medium' ? 'FF8C00' : '28A745'
             }),
             new TextRun({
               text: ` risk.`,
@@ -300,7 +299,7 @@ export const generateDOCXReport = async (reportData: ReportData): Promise<void> 
               color: isHighRisk ? 'DC3545' : undefined
             }),
             new TextRun({
-              text: s(item.recommendation || 'Monitor'),
+              text: s(row.recommendation || 'Monitor'),
               color: isHighRisk ? 'DC3545' : undefined
             })
           ],
@@ -326,7 +325,7 @@ export const generateDOCXReport = async (reportData: ReportData): Promise<void> 
       );
 
       // Photos reference
-      if (item.photos && item.photos.length > 0) {
+      if (row.photos && row.photos.length > 0) {
         children.push(
           new Paragraph({
             children: [
@@ -335,7 +334,7 @@ export const generateDOCXReport = async (reportData: ReportData): Promise<void> 
                 bold: true
               }),
               new TextRun({
-                text: `${item.photos.length} photo(s) captured (Reference: ${s(item.referenceNumber)})`
+                text: `${row.photos.length} photo(s) captured (Reference: ${s(row.referenceNumber)})`
               })
             ],
             spacing: { after: 200 }
@@ -344,7 +343,7 @@ export const generateDOCXReport = async (reportData: ReportData): Promise<void> 
       }
 
       // Notes if any
-      if (item.notes) {
+      if (row.notes) {
         children.push(
           new Paragraph({
             children: [
@@ -353,7 +352,7 @@ export const generateDOCXReport = async (reportData: ReportData): Promise<void> 
                 bold: true
               }),
               new TextRun({
-                text: s(item.notes)
+                text: s(row.notes)
               })
             ],
             spacing: { after: 200 }
